@@ -38,9 +38,35 @@
   // stale-peer guard (pola yang sama seperti fix race v4.1).
   var JOIN_TIMEOUT_MS = 12000;
   var CONN_TIMEOUT_MS = 10000;
-  var JOIN_TIMEOUT_MSG = "Tidak bisa nyambung — cek internet, pastikan host masih buka tab gamenya & belum pindah aplikasi, lalu tap COBA LAGI.";
+  // v4.4 (TURN test): pesan timeout DIBEDAKAN per tahap supaya kegagalan
+  // berikutnya ketahuan persis di mana — tahap-1 = signaling (peer tidak
+  // pernah "open"), tahap-2 = ICE (conn tidak pernah "open").
+  var JOIN_STAGE1_MSG = "Tidak bisa nyambung ke server PeerJS (tahap 1) — cek internet lalu tap COBA LAGI.";
+  var JOIN_STAGE2_MSG = "Tidak bisa nyambung langsung ke host (tahap 2) — pastikan host masih buka tab gamenya & belum pindah aplikasi, lalu tap COBA LAGI.";
   var joinTimer = null;
   var connTimer = null;
+
+  // v4.4 (TURN test, Neon): factory opsi Peer — SELALU objek baru per Peer
+  // (RTCPeerConnection boleh memutasi config). STUN Google ditulis ulang
+  // eksplisit karena config menggantikan iceServers default PeerJS.
+  // TURN = OpenRelay (Metered, publik, tanpa signup, 20 GB/bln) — UDP +
+  // TCP + TLS di port 80/443, karena browser cloud sering memblokir UDP.
+  function peerOptions() {
+    return {
+      debug: 0,
+      config: {
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+          { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+          { urls: "turn:openrelay.metered.ca:80?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+          { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+          { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+          { urls: "turns:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" }
+        ]
+      }
+    };
+  }
 
   function clearJoinTimers() {
     clearTimeout(joinTimer);
@@ -53,7 +79,7 @@
   // tapi PERTAHANKAN roomCode + myName supaya COBA LAGI (retryJoin) tetap bisa
   // jalan — Online.destroy() sendiri mengosongkan roomCode, jadi tanpa ini
   // tombol COBA LAGI tidak akan berbuat apa-apa.
-  function failJoinTimeout(peer) {
+  function failJoinTimeout(peer, msg) {
     // v4.3 (Neon): + guard Online.connected — kalau entah bagaimana sudah
     // terhubung, timer basi tidak boleh emit error timeout.
     if (Online.peer !== peer || Online.connected) return; // join baru sudah jalan — abaikan timer basi
@@ -63,7 +89,7 @@
     Online.destroy();
     Online.roomCode = code;
     Online.myName = name;
-    emit({ type: "error", message: JOIN_TIMEOUT_MSG });
+    emit({ type: "error", message: msg || JOIN_STAGE2_MSG });
   }
 
   // Daftar ulang ke signaling server dengan ID yang sama (af-XXXXXX) kalau
@@ -162,7 +188,7 @@
       if (err && err.type === "unavailable-id") {
         try { peer.destroy(); } catch (e) {}
         Online.roomCode = makeCode();
-        wireHostPeer(new Peer(PREFIX + Online.roomCode, { debug: 0 }));
+        wireHostPeer(new Peer(PREFIX + Online.roomCode, peerOptions()));
         return;
       }
       emit({ type: "error", message: "Gagal buat room. Coba lagi." });
@@ -176,7 +202,7 @@
     Online.isHost = true;
     Online.myName = name || "Pemain 1";
     Online.roomCode = makeCode();
-    wireHostPeer(new Peer(PREFIX + Online.roomCode, { debug: 0 }));
+    wireHostPeer(new Peer(PREFIX + Online.roomCode, peerOptions()));
   };
 
   // Tamu: join room pakai kode.
@@ -187,19 +213,19 @@
     Online.myName = name || "Pemain 2";
     Online.roomCode = (code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (Online.roomCode.length < 4) { emit({ type: "error", message: "Kode room tidak valid." }); return; }
-    var peer = new Peer({ debug: 0 });
+    var peer = new Peer(peerOptions());
     Online.peer = peer;
     clearJoinTimers();
     // Tahap-1: peer tidak pernah "open" (mis. WebSocket ke PeerJS cloud tidak
     // nyambung dari jaringan tamu) — jangan gantung diam selamanya.
-    joinTimer = setTimeout(function () { failJoinTimeout(peer); }, JOIN_TIMEOUT_MS);
+    joinTimer = setTimeout(function () { failJoinTimeout(peer, JOIN_STAGE1_MSG); }, JOIN_TIMEOUT_MS);
     peer.on("open", function () {
       if (Online.peer !== peer) return; // peer lama yang telat buka — abaikan
       clearTimeout(joinTimer);
       joinTimer = null;
       // Tahap-2: peer "open" tapi conn tidak pernah "open" (mis. host
       // ke-suspend saat pindah aplikasi) — jangan gantung diam selamanya.
-      connTimer = setTimeout(function () { failJoinTimeout(peer); }, CONN_TIMEOUT_MS);
+      connTimer = setTimeout(function () { failJoinTimeout(peer, JOIN_STAGE2_MSG); }, CONN_TIMEOUT_MS);
       var conn = peer.connect(PREFIX + Online.roomCode, { reliable: true });
       wireConn(conn);
     });
