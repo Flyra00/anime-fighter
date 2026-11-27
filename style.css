@@ -75,11 +75,15 @@ main { max-width: 960px; margin: 0 auto; padding: 12px; }
 .rarity-Rare { border-top: 4px solid #3c8cff; }
 .rarity-Epic { border-top: 4px solid #aa50ff; }
 .rarity-Legendary { border-top: 4px solid #ffb400; }
+.rarity-Mythical { border-top: 4px solid #ff2d78; }
+.rarity-Secret { border-top: 4px solid #00d4ff; }
 .rarity-tag { font-size: 11px; font-weight: 800; letter-spacing: .5px; }
 .rarity-Common .rarity-tag { color: #b8b8b8; }
 .rarity-Rare .rarity-tag { color: #6aa5ff; }
 .rarity-Epic .rarity-tag { color: #c07dff; }
 .rarity-Legendary .rarity-tag { color: #ffb400; }
+.rarity-Mythical .rarity-tag { color: #ff6b9d; }
+.rarity-Secret .rarity-tag { color: #4dd8ff; }
 .fighter-box { font-size: 15px; line-height: 1.6; }
 .fighter-box .fighter-card { display: flex; gap: 12px; align-items: flex-start; }
 .fighter-box img, .fighter-box .img-fallback {
@@ -152,6 +156,76 @@ input[type="text"], select {
   transition: opacity .25s, transform .25s; z-index: 50; max-width: 92vw; text-align: center;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* ---------- POWER BUILDING (v2) ---------- */
+.build-slot {
+  display: flex; gap: 10px; align-items: center; width: 100%;
+  background: #12121c; border: 2px solid #3d3d5c; border-radius: 10px;
+  padding: 8px 10px; margin-bottom: 8px; cursor: pointer; text-align: left;
+  color: #fff; font-family: inherit;
+}
+.build-slot.selected { border-color: #ffd700; box-shadow: 0 0 0 2px #ffd700; }
+.build-slot img, .build-slot .img-fallback {
+  width: 52px; height: 64px; object-fit: cover; object-position: top;
+  border-radius: 8px; flex-shrink: 0;
+}
+.build-slot .img-fallback {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 900; color: rgba(255,255,255,.9);
+}
+.build-slot .slot-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.build-slot .slot-label { font-weight: 800; font-size: 13px; color: #ffb400; }
+.build-slot .slot-sub { font-size: 11px; color: #a9a9c4; font-weight: 400; }
+.build-slot .slot-char { font-weight: 800; font-size: 15px; }
+.build-slot .slot-move { font-size: 12px; color: #ffd479; }
+.build-slot .slot-empty { color: #a9a9c4; font-size: 13px; line-height: 1.4; }
+.build-slot .slot-val { margin-left: auto; font-weight: 900; font-size: 22px; color: #ffd479; flex-shrink: 0; }
+.power-box { background: #12121c; border-radius: 10px; padding: 12px; margin-top: 10px; }
+.power-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.power-label { font-weight: 800; font-size: 13px; color: #ffb400; letter-spacing: .5px; }
+.power-num { font-size: 32px; font-weight: 900; color: #ffb400; }
+.power-grade {
+  font-weight: 900; font-size: 15px; color: #111; background: #ffd700;
+  border-radius: 999px; padding: 2px 10px;
+}
+.stat-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 7px; }
+.stat-row .stat-name { width: 92px; font-weight: 700; flex-shrink: 0; }
+.stat-row .stat-bar { flex: 1; height: 10px; background: #23233a; border-radius: 999px; overflow: hidden; }
+.stat-row .stat-fill { display: block; height: 100%; background: #37d67a; }
+.stat-row .stat-num { width: 28px; text-align: right; font-weight: 800; flex-shrink: 0; }
+.build-actions { display: flex; gap: 10px; margin-top: 10px; }
+.build-actions .btn { flex: 1; }
+
+/* ---------- SHOWDOWN (v2) ---------- */
+.mode-label { font-weight: 800; font-size: 14px; color: #ffb400; }
+.battle-menu select {
+  width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #3d3d5c;
+  background: #12121c; color: #fff; font-size: 15px; margin-bottom: 10px;
+}
+.sd-wrap { display: flex; gap: 8px; align-items: stretch; }
+.sd-fighter {
+  flex: 1; min-width: 0; background: #23233a; border: 2px solid #3d3d5c;
+  border-radius: 12px; padding: 10px;
+}
+.sd-title { font-weight: 900; font-size: 14px; color: #ffb400; letter-spacing: .5px; margin-bottom: 4px; }
+.sd-avg { font-size: 30px; font-weight: 900; color: #ffb400; text-align: center; margin-top: 8px; }
+.sd-grade { font-size: 13px; font-weight: 800; color: #d7d7ea; text-align: center; }
+.sd-result {
+  background: #12121c; border-radius: 10px; padding: 14px; margin-top: 12px;
+  font-size: 16px; font-weight: 800; text-align: center; line-height: 1.5;
+}
+.duel-slots { margin: 12px 0; }
+.duel-slot-row {
+  display: flex; justify-content: space-between; gap: 10px;
+  background: #12121c; border: 1px solid #3d3d5c; border-radius: 8px;
+  padding: 8px 10px; font-size: 14px; margin-bottom: 6px;
+}
+.duel-slot-row .slot-label { font-weight: 800; font-size: 13px; color: #ffb400; }
+
+/* Kartu: isi kartu harus baris terpisah (div), bukan span inline yang nempel. */
+.card .card-body { display: block; }
+.card .card-name, .card .card-anime, .card .card-move, .card .card-stats, .card .card-count { display: block; }
+.card .card-used { display: block; margin-top: 4px; font-size: 11px; font-weight: 800; color: #37d67a; }
+
 @media (max-width: 560px) {
   .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
   .card img, .card .img-fallback { height: 128px; }

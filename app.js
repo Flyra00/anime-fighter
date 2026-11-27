@@ -1,4 +1,7 @@
-// Anime Fighter (web) — spin, gabung, battle. Save di localStorage.
+// Anime Fighter (web) v2 — Power Building + SHOWDOWN (ala Build An Anime Character).
+// Spin dapetin karakter, susun 5 karakter (satu per slot stat) jadi 1 fighter.
+// Battle = SHOWDOWN: adu AVG SCORE 5 stat, tertinggi menang (atau terendah di Reverse).
+// Save di localStorage.
 (function () {
   "use strict";
 
@@ -9,15 +12,24 @@
   var WIN_REWARD = 100;
   var LOSE_REWARD = 15;
 
+  // 5 slot stat — nama Indonesia seperti di game Roblox-nya.
+  var SLOT_DEFS = [
+    { key: "str", label: "KEKUATAN", sub: "Strength" },
+    { key: "spd", label: "KECEPATAN", sub: "Speed" },
+    { key: "abi", label: "KEMAMPUAN", sub: "Abilities" },
+    { key: "iq", label: "KEPINTARAN", sub: "IQ" },
+    { key: "dur", label: "KETAHANAN", sub: "Durability" },
+  ];
+
   var save = loadSave();
-  var selected = [];      // id karakter dipilih buat gabung (maks 2)
-  var duelSelected = [];  // id karakter dipilih teman buat duel
-  var battle = null;      // state battle aktif
+  var selectedSlot = "str"; // slot yang lagi dipilih di Power Building
+  var duelSelected = [];    // id karakter dipilih teman buat duel (maks 5, urutan = slot)
+  var showdown = null;      // state showdown aktif
   var soundOn = save.soundOn !== false;
 
   // ---------------- SAVE ----------------
   function defaultSave() {
-    return { cash: 200, freeSpins: 3, lastRefill: Date.now(), owned: {}, fighter: null, wins: 0, battles: 0, soundOn: true };
+    return { cash: 200, freeSpins: 3, lastRefill: Date.now(), owned: {}, fighter: null, build: { str: null, spd: null, abi: null, iq: null, dur: null }, wins: 0, battles: 0, soundOn: true };
   }
   function loadSave() {
     try {
@@ -26,6 +38,7 @@
       var s = JSON.parse(raw);
       var d = defaultSave();
       for (var k in d) if (s[k] === undefined) s[k] = d[k];
+      if (!s.build) s.build = { str: null, spd: null, abi: null, iq: null, dur: null };
       return s;
     } catch (e) { return defaultSave(); }
   }
@@ -79,7 +92,6 @@
   // ---------------- BANTU ----------------
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
-  function dmgOf(atk, def) { return Math.max(2, atk - Math.floor(def / 3)); }
   function toast(msg) {
     var t = $("toast"); t.textContent = msg; t.classList.add("show");
     clearTimeout(t._timer); t._timer = setTimeout(function () { t.classList.remove("show"); }, 3200);
@@ -88,8 +100,103 @@
     if (c.img) return '<img class="' + (cls || "") + '" src="' + esc(c.img) + '" alt="' + esc(c.name) + '" loading="lazy" onerror="this.outerHTML=\'<div class=&quot;img-fallback&quot; style=&quot;background:' + esc(c.color) + '&quot;>' + esc(c.name.charAt(0)) + '</div>\'">';
     return '<div class="img-fallback" style="background:' + esc(c.color) + '">' + esc(c.name.charAt(0)) + "</div>";
   }
+  // Nilai 1 stat (0-100) dari lore.
+  function statOf(c, key) {
+    if (c.stats && typeof c.stats[key] === "number") return c.stats[key];
+    if (key === "str") return c.atk || 50;
+    if (key === "spd") return c.spd || 50;
+    if (key === "dur") return c.def || 50;
+    return 50;
+  }
   function statLine(c) {
+    if (c.stats) {
+      return "STR " + c.stats.str + " &nbsp;SPD " + c.stats.spd + " &nbsp;ABI " + c.stats.abi + " &nbsp;IQ " + c.stats.iq + " &nbsp;DUR " + c.stats.dur;
+    }
     return "ATK " + c.atk + " &nbsp;DEF " + c.def + " &nbsp;SPD " + c.spd + " &nbsp;HP " + c.hp;
+  }
+  function slotLabel(key) {
+    for (var i = 0; i < SLOT_DEFS.length; i++) if (SLOT_DEFS[i].key === key) return SLOT_DEFS[i].label;
+    return key;
+  }
+  function slotOfChar(id) {
+    for (var i = 0; i < SLOT_DEFS.length; i++) {
+      if (save.build[SLOT_DEFS[i].key] === id) return SLOT_DEFS[i].key;
+    }
+    return null;
+  }
+
+  // ---------------- POWER BUILDING ----------------
+  function buildValues() {
+    var vals = {}, filled = 0, sum = 0;
+    SLOT_DEFS.forEach(function (d) {
+      var id = save.build[d.key];
+      var c = id ? charById(id) : null;
+      var v = c ? statOf(c, d.key) : null;
+      vals[d.key] = v;
+      if (v !== null) { filled++; sum += v; }
+    });
+    var avg = filled ? sum / 5 : null;
+    return { vals: vals, filled: filled, avg: avg, grade: avg === null ? null : gradeOf(avg) };
+  }
+  function gradeOf(avg) {
+    if (avg >= 92) return "S";
+    if (avg >= 86) return "A";
+    if (avg >= 78) return "B";
+    if (avg >= 68) return "C";
+    return "D";
+  }
+  function renderBuild() {
+    var box = $("buildSlots");
+    var html = "";
+    SLOT_DEFS.forEach(function (d) {
+      var id = save.build[d.key];
+      var c = id ? charById(id) : null;
+      var v = c ? statOf(c, d.key) : null;
+      html += '<button class="build-slot' + (selectedSlot === d.key ? " selected" : "") + '" data-slot="' + d.key + '">';
+      if (c) {
+        html += imgHtml(c) +
+          '<span class="slot-info"><span class="slot-label">' + d.label + ' <span class="slot-sub">(' + d.sub + ')</span></span>' +
+          '<span class="slot-char">' + esc(c.name) + '</span>' +
+          '<span class="slot-move">Jurus: ' + esc(c.move) + '</span></span>' +
+          '<span class="slot-val">' + v + '</span>';
+      } else {
+        html += '<span class="slot-info"><span class="slot-label">' + d.label + ' <span class="slot-sub">(' + d.sub + ')</span></span>' +
+          '<span class="slot-empty">+ Kosong — tap slot ini, terus klik karakter di koleksi</span></span>';
+      }
+      html += "</button>";
+    });
+    box.innerHTML = html;
+    box.querySelectorAll(".build-slot").forEach(function (el) {
+      el.addEventListener("click", function () {
+        sfx.click();
+        selectedSlot = el.getAttribute("data-slot");
+        renderBuild();
+      });
+    });
+
+    var b = buildValues();
+    var pb = $("powerBox");
+    if (b.filled === 0) {
+      pb.innerHTML = '<p class="hint">Belum ada slot terisi. Tap slot KEKUATAN di atas, terus klik karakter di koleksi lo.</p>';
+      return;
+    }
+    var names = SLOT_DEFS.map(function (d) {
+      var c = save.build[d.key] ? charById(save.build[d.key]) : null;
+      return c ? c.name : "-";
+    }).join(" + ");
+    var bars = "";
+    SLOT_DEFS.forEach(function (d) {
+      var v = b.vals[d.key];
+      bars += '<div class="stat-row"><span class="stat-name">' + d.label + '</span>' +
+        '<span class="stat-bar"><span class="stat-fill" style="width:' + (v === null ? 0 : v) + '%"></span></span>' +
+        '<span class="stat-num">' + (v === null ? "-" : v) + '</span></div>';
+    });
+    pb.innerHTML = '<div class="power-head"><span class="power-label">POWER (AVG SCORE)</span>' +
+      '<span class="power-num">' + (b.avg === null ? "-" : b.avg.toFixed(1)) + '</span>' +
+      (b.grade ? '<span class="power-grade">Grade ' + b.grade + '</span>' : "") + "</div>" +
+      '<div class="muted" style="margin:6px 0 4px">' + esc(names) + "</div>" +
+      bars +
+      (b.filled < 5 ? '<p class="hint" style="margin-top:8px">Masih ' + (5 - b.filled) + ' slot kosong. Isi semua biar Power kehitung penuh.</p>' : "");
   }
 
   // ---------------- FREE SPIN ----------------
@@ -113,28 +220,18 @@
     $("soundBtn").textContent = "Suara: " + (soundOn ? "ON" : "OFF");
   }
 
-  function renderFighter() {
-    var box = $("fighterBox");
-    var f = save.fighter;
-    if (!f) { box.innerHTML = '<p class="hint">Belum ada fighter. Spin, pilih 2 karakter di koleksi, terus GABUNG.</p>'; return; }
-    var c = charById(f.parts[0]) || { color: "#888", img: "", name: "?" };
-    box.innerHTML = '<div class="fighter-card">' + imgHtml({ img: c.img, color: f.color || c.color, name: f.name }) +
-      '<div><div style="font-weight:800;font-size:17px">' + esc(f.name) + '</div>' +
-      '<div class="muted">Dari: ' + esc(f.fromNames) + '</div>' +
-      '<div>' + statLine(f) + '</div>' +
-      '<div style="color:#ffd479">Jurus: ' + esc(f.move) + '</div></div></div>';
-  }
-
   function cardHtml(c, count, isSelected) {
+    var used = slotOfChar(c.id);
     return '<button class="card rarity-' + c.rarity + (isSelected ? " selected" : "") + '" data-id="' + c.id + '">' +
       imgHtml(c) +
-      '<span class="card-body"><span class="rarity-tag">' + c.rarity.toUpperCase() + '</span>' +
-      '<span class="card-name">' + esc(c.name) + '</span>' +
-      '<span class="card-anime">' + esc(c.anime) + '</span>' +
-      '<span class="card-move">Jurus: ' + esc(c.move) + '</span>' +
-      '<span class="card-stats">' + statLine(c) + '</span>' +
-      (count ? '<span class="card-count">Punya x' + count + '</span>' : "") +
-      "</span></button>";
+      '<div class="card-body"><div class="rarity-tag">' + c.rarity.toUpperCase() + '</div>' +
+      '<div class="card-name">' + esc(c.name) + '</div>' +
+      '<div class="card-anime">' + esc(c.anime) + '</div>' +
+      '<div class="card-move">Jurus: ' + esc(c.move) + '</div>' +
+      '<div class="card-stats">' + statLine(c) + '</div>' +
+      (count ? '<div class="card-count">Punya x' + count + '</div>' : "") +
+      (used ? '<div class="card-used">Dipakai: ' + slotLabel(used) + '</div>' : "") +
+      "</div></button>";
   }
 
   function renderCollection() {
@@ -144,35 +241,34 @@
     $("collectionCount").textContent = "(" + total + " karakter)";
     if (!ids.length) { grid.innerHTML = '<p class="hint">Koleksi masih kosong. Spin dulu!</p>'; return; }
     ids.sort(function (a, b) {
-      var ra = ["Common", "Rare", "Epic", "Legendary"].indexOf(charById(a).rarity);
-      var rb = ["Common", "Rare", "Epic", "Legendary"].indexOf(charById(b).rarity);
+      var ra = ["Common", "Rare", "Epic", "Legendary", "Mythical", "Secret"].indexOf(charById(a).rarity);
+      var rb = ["Common", "Rare", "Epic", "Legendary", "Mythical", "Secret"].indexOf(charById(b).rarity);
       return rb - ra || charById(a).name.localeCompare(charById(b).name);
     });
     grid.innerHTML = ids.map(function (id) {
-      return cardHtml(charById(id), save.owned[id], selected.indexOf(id) !== -1);
+      return cardHtml(charById(id), save.owned[id], false);
     }).join("");
     grid.querySelectorAll(".card").forEach(function (el) {
       el.addEventListener("click", function () {
         sfx.click();
         var id = el.getAttribute("data-id");
-        var i = selected.indexOf(id);
-        if (i !== -1) selected.splice(i, 1);
-        else {
-          if (selected.length >= 2) { toast("Maksimal 2 karakter. Klik lagi buat batalin pilihan."); return; }
-          selected.push(id);
+        var c = charById(id);
+        if (!c) return;
+        var used = slotOfChar(id);
+        if (used === selectedSlot) {
+          save.build[selectedSlot] = null;
+          persist(); toast(c.name + " dilepas dari slot " + slotLabel(selectedSlot) + ".");
+        } else if (used) {
+          toast(c.name + " udah dipakai di slot " + slotLabel(used) + ". Lepas dulu atau pilih karakter lain.");
+          return;
+        } else {
+          save.build[selectedSlot] = id;
+          persist(); sfx.pop();
+          toast(c.name + " masuk slot " + slotLabel(selectedSlot) + " (" + statOf(c, selectedSlot) + ").");
         }
-        renderCollection(); renderSlots();
+        renderAll();
       });
     });
-  }
-
-  function renderSlots() {
-    function slotText(i) {
-      var c = selected[i] ? charById(selected[i]) : null;
-      return "Slot " + (i + 1) + ": " + (c ? c.name + " [" + c.rarity + "]" : "-");
-    }
-    $("slot1").textContent = slotText(0);
-    $("slot2").textContent = slotText(1);
   }
 
   function renderGallery() {
@@ -187,7 +283,7 @@
       '<p class="hint">Tidak ketemu. Coba kata lain.</p>';
   }
 
-  function renderAll() { renderBadges(); renderFighter(); renderCollection(); renderSlots(); renderGallery(); }
+  function renderAll() { renderBadges(); renderBuild(); renderCollection(); renderGallery(); }
 
   // ---------------- SPIN ----------------
   $("spinBtn").addEventListener("click", function () {
@@ -206,149 +302,166 @@
     renderAll();
   });
 
-  // ---------------- GABUNG ----------------
-  $("combineBtn").addEventListener("click", function () {
+  // ---------------- POWER BUILDING: TOMBOL ----------------
+  $("autoFillBtn").addEventListener("click", function () {
     sfx.click();
-    if (selected.length < 2) { toast("Pilih 2 karakter dulu di koleksi."); return; }
-    var c1 = charById(selected[0]), c2 = charById(selected[1]);
-    if (!c1 || !c2 || (save.owned[c1.id] || 0) < 1 || (save.owned[c2.id] || 0) < 1) {
-      toast("Karakter tidak ditemukan di koleksi."); return;
-    }
-    save.owned[c1.id]--; save.owned[c2.id]--;
-    var name = ($("fighterName").value || "").trim().slice(0, 20) || (c1.name + "-" + c2.name);
-    var stronger = c1.atk >= c2.atk ? c1 : c2;
-    save.fighter = {
-      name: name, atk: Math.max(c1.atk, c2.atk), def: Math.max(c1.def, c2.def),
-      spd: Math.max(c1.spd, c2.spd), hp: Math.max(c1.hp, c2.hp),
-      move: stronger.move, color: c1.color, parts: [c1.id, c2.id],
-      fromNames: c1.name + " + " + c2.name
-    };
-    selected = []; $("fighterName").value = "";
+    var ownedIds = Object.keys(save.owned).filter(function (id) { return save.owned[id] > 0; });
+    if (!ownedIds.length) { toast("Koleksi masih kosong. Spin dulu!"); return; }
+    var used = [];
+    SLOT_DEFS.forEach(function (d) {
+      var best = null, bestVal = -1;
+      ownedIds.forEach(function (id) {
+        if (used.indexOf(id) !== -1) return;
+        var v = statOf(charById(id), d.key);
+        if (v > bestVal) { bestVal = v; best = id; }
+      });
+      if (best) { save.build[d.key] = best; used.push(best); }
+    });
     persist(); sfx.levelup();
-    toast("Fighter baru: " + save.fighter.name + "! ATK " + save.fighter.atk + " DEF " + save.fighter.def + " SPD " + save.fighter.spd + " HP " + save.fighter.hp);
+    var b = buildValues();
+    toast("Fighter terisi otomatis! Power " + (b.avg === null ? "-" : b.avg.toFixed(1)) + " (Grade " + b.grade + ").");
+    renderAll();
+  });
+  $("resetBuildBtn").addEventListener("click", function () {
+    sfx.click();
+    SLOT_DEFS.forEach(function (d) { save.build[d.key] = null; });
+    persist();
+    toast("Power Building di-reset.");
     renderAll();
   });
 
-  // ---------------- BATTLE ----------------
-  function makeFighterFrom(c1, c2, name) {
-    var stronger = c1.atk >= c2.atk ? c1 : c2;
-    return {
-      name: name, atk: Math.max(c1.atk, c2.atk), def: Math.max(c1.def, c2.def),
-      spd: Math.max(c1.spd, c2.spd), hp: Math.max(c1.hp, c2.hp),
-      move: stronger.move, color: c1.color, parts: [c1.id, c2.id],
-      fromNames: c1.name + " + " + c2.name
-    };
+  // ---------------- SHOWDOWN (adu AVG score, ala BAAC) ----------------
+  function partsFromBuild() {
+    var b = buildValues();
+    if (b.filled < 5) return null;
+    var parts = {};
+    SLOT_DEFS.forEach(function (d) { parts[d.key] = save.build[d.key]; });
+    return parts;
   }
-  function botFighter() {
-    var a = rollCharacter(), b = rollCharacter();
-    return makeFighterFrom(a, b, "BOT " + a.name + "-" + b.name);
+  function partsStats(parts) {
+    var vals = {}, sum = 0;
+    SLOT_DEFS.forEach(function (d) {
+      var c = charById(parts[d.key]);
+      vals[d.key] = c ? statOf(c, d.key) : 0;
+      sum += vals[d.key];
+    });
+    var avg = sum / 5;
+    return { vals: vals, avg: avg, grade: gradeOf(avg) };
   }
-  function fighterImg(f) {
-    var c = charById(f.parts[0]);
-    return { img: c ? c.img : "", color: f.color || "#888", name: f.name };
+  function partsNames(parts) {
+    return SLOT_DEFS.map(function (d) {
+      var c = charById(parts[d.key]);
+      return c ? c.name : "-";
+    }).join(" + ");
   }
-  function startBattle(fA, fB, mode) {
-    battle = {
-      a: fA, b: fB, hpA: fA.hp, hpB: fB.hp, maxA: fA.hp, maxB: fB.hp,
-      turn: "A", mode: mode, over: false
-    };
+  function botParts() {
+    // Bot roll 8 karakter UNIK, lalu isi otomatis (terbaik per slot, beda karakter).
+    var pool = [], tries = 0;
+    while (pool.length < 8 && tries < 60) {
+      var id = rollCharacter().id;
+      if (pool.indexOf(id) === -1) pool.push(id);
+      tries++;
+    }
+    var parts = {}, used = [];
+    SLOT_DEFS.forEach(function (d) {
+      var best = null, bestVal = -1;
+      pool.forEach(function (id) {
+        if (used.indexOf(id) !== -1) return;
+        var v = statOf(charById(id), d.key);
+        if (v > bestVal) { bestVal = v; best = id; }
+      });
+      if (best) { parts[d.key] = best; used.push(best); }
+    });
+    return parts;
+  }
+  function startShowdown(aParts, bParts, mode, reverse) {
+    showdown = { a: aParts, b: bParts, mode: mode, reverse: reverse, revealed: false, over: false };
     save.battles++; persist();
     $("arena").classList.remove("hidden");
     $("duelPicker").classList.add("hidden");
-    $("battleLog").innerHTML = "";
-    $("attackB").classList.toggle("hidden", mode !== "duel");
-    renderBattle();
-    log("Battle mulai: " + fA.name + " vs " + fB.name + "!");
-    if (mode === "duel") log("Giliran P1 dulu. Tap tombol SERANG masing-masing pas giliran lo.");
-    else log("Tap SERANG (P1) buat mukul. Bot nyerang balik tiap giliran.");
+    $("showdownResult").innerHTML = "";
+    $("showdownBtn").textContent = "SHOWDOWN!";
+    $("showdownBtn").classList.remove("hidden");
+    renderShowdown();
   }
-  function renderBattle() {
-    if (!battle) return;
-    renderBattleCard("cardA", battle.a, battle.hpA, battle.maxA);
-    renderBattleCard("cardB", battle.b, battle.hpB, battle.maxB);
-    $("turnLabel").textContent = battle.over ? "" :
-      (battle.mode === "duel" ? (battle.turn === "A" ? "Giliran: P1 — " + battle.a.name : "Giliran: P2 — " + battle.b.name)
-        : (battle.turn === "A" ? "Giliran lo! Tap SERANG." : "Bot nyerang..."));
-    $("attackA").disabled = battle.over || battle.turn !== "A";
-    $("attackB").disabled = battle.over || battle.turn !== "B";
+  function sdFighterHtml(title, parts, st, showVals) {
+    var names = partsNames(parts);
+    var bars = "";
+    SLOT_DEFS.forEach(function (d) {
+      var v = st.vals[d.key];
+      bars += '<div class="stat-row"><span class="stat-name">' + d.label + '</span>' +
+        '<span class="stat-bar"><span class="stat-fill" style="width:' + (showVals ? v : 0) + '%"></span></span>' +
+        '<span class="stat-num">' + (showVals ? v : "?") + '</span></div>';
+    });
+    return '<div class="sd-fighter"><div class="sd-title">' + title + '</div>' +
+      '<div class="muted" style="font-size:12px;margin-bottom:6px">' + esc(names) + '</div>' +
+      bars +
+      '<div class="sd-avg">' + (showVals ? st.avg.toFixed(1) : "?") + '</div>' +
+      '<div class="sd-grade">' + (showVals ? "Grade " + st.grade : "???") + '</div></div>';
   }
-  function renderBattleCard(id, f, hp, max) {
-    var el = $(id);
-    var pct = Math.max(0, Math.round(hp / max * 100));
-    el.innerHTML = imgHtml(fighterImg(f)) +
-      "<h3>" + esc(f.name) + "</h3>" +
-      '<div class="muted">' + statLine(f) + '</div>' +
-      '<div style="color:#ffd479;font-size:13px">Jurus: ' + esc(f.move) + '</div>' +
-      '<div class="hp-bar"><div class="hp-fill" style="width:' + pct + '%"></div></div>' +
-      '<div class="hp-text">HP ' + Math.max(0, hp) + " / " + max + '</div><div class="dmg"></div>';
+  function renderShowdown() {
+    if (!showdown) return;
+    var a = partsStats(showdown.a), b = partsStats(showdown.b);
+    $("showdownBox").innerHTML =
+      '<div class="sd-wrap">' +
+      sdFighterHtml("FIGHTER LO", showdown.a, a, true) +
+      '<div class="vs">VS</div>' +
+      sdFighterHtml("LAWAN", showdown.b, b, showdown.revealed) +
+      "</div>";
   }
-  function log(msg) {
-    var l = $("battleLog");
-    l.innerHTML += "<div>" + esc(msg) + "</div>";
-    l.scrollTop = l.scrollHeight;
-  }
-  function showDmg(cardId, dmg) {
-    var el = document.querySelector("#" + cardId + " .dmg");
-    if (el) el.textContent = "-" + dmg;
-    var card = $(cardId);
-    card.classList.remove("hit"); void card.offsetWidth; card.classList.add("hit");
-    setTimeout(function () { if (el) el.textContent = ""; }, 700);
-  }
-  function doAttack(side) {
-    if (!battle || battle.over || battle.turn !== side) return;
-    var atkF = side === "A" ? battle.a : battle.b;
-    var defF = side === "A" ? battle.b : battle.a;
-    var dmg = dmgOf(atkF.atk, defF.def);
-    sfx.swing();
-    setTimeout(function () {
-      if (!battle || battle.over) return;
-      sfx.punch();
-      if (side === "A") { battle.hpB -= dmg; showDmg("cardB", dmg); }
-      else { battle.hpA -= dmg; showDmg("cardA", dmg); }
-      log(atkF.name + " pakai " + atkF.move + " — " + dmg + " damage ke " + defF.name + "!");
-      if (battle.hpB <= 0 || battle.hpA <= 0) { endBattle(side === "A" ? "A" : "B"); return; }
-      battle.turn = side === "A" ? "B" : "A";
-      renderBattle();
-      if (battle.mode === "bot" && battle.turn === "B") {
-        setTimeout(function () { doAttack("B"); }, 750);
-      }
-    }, 180);
-    renderBattle();
-  }
-  function endBattle(winner) {
-    battle.over = true;
-    var winF = winner === "A" ? battle.a : battle.b;
-    var loseF = winner === "A" ? battle.b : battle.a;
-    if (battle.mode === "bot") {
-      if (winner === "A") { save.cash += WIN_REWARD; save.wins++; sfx.win(); sfx.coin(); toast("MENANG! +" + WIN_REWARD + " Cash"); }
-      else { save.cash += LOSE_REWARD; toast("Kalah. +" + LOSE_REWARD + " Cash"); }
-      persist();
+  $("showdownBtn").addEventListener("click", function () {
+    if (!showdown || showdown.over) return;
+    sfx.click();
+    showdown.revealed = true;
+    showdown.over = true;
+    var rev = showdown.reverse;
+    var a = partsStats(showdown.a), b = partsStats(showdown.b);
+    var winner;
+    if (a.avg === b.avg) winner = "draw";
+    else if (rev) winner = a.avg < b.avg ? "A" : "B";
+    else winner = a.avg > b.avg ? "A" : "B";
+    renderShowdown();
+    var msg;
+    if (winner === "draw") {
+      msg = "SERI! AVG sama-sama " + a.avg.toFixed(1) + ". +50 Cash.";
+      if (showdown.mode === "bot") save.cash += 50;
+      sfx.coin();
+    } else if (winner === "A") {
+      msg = "MENANG! " + a.avg.toFixed(1) + " vs " + b.avg.toFixed(1) + ". +100 Cash, +1 Win!";
+      if (showdown.mode === "bot") { save.cash += WIN_REWARD; save.wins++; }
+      sfx.win(); sfx.coin();
     } else {
-      sfx.win();
-      toast(winner === "A" ? "P1 MENANG!" : "P2 MENANG!");
+      msg = "KALAH. " + a.avg.toFixed(1) + " vs " + b.avg.toFixed(1) + ". +15 Cash.";
+      if (showdown.mode === "bot") save.cash += LOSE_REWARD;
+      sfx.coin();
     }
-    log(winF.name + " MENANG lawan " + loseF.name + "!");
-    renderBattle(); renderBadges();
-  }
-
+    persist();
+    $("showdownResult").innerHTML = '<div class="sd-result">' + esc(msg) + '</div>' +
+      (showdown.mode === "bot" ? '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (BOT BARU)</button>' : "");
+    $("showdownBtn").classList.add("hidden");
+    var rb = $("rematchBtn");
+    if (rb) rb.addEventListener("click", function () {
+      sfx.click();
+      startShowdown(partsFromBuild(), botParts(), "bot", rev);
+    });
+    renderBadges();
+  });
   $("botBtn").addEventListener("click", function () {
     sfx.click();
-    if (!save.fighter) { toast("Gabung 2 karakter dulu buat bikin fighter!"); return; }
-    startBattle(save.fighter, botFighter(), "bot");
+    if (!partsFromBuild()) { toast("Bangun fighter dulu di Power Building (isi 5 slot)!"); return; }
+    startShowdown(partsFromBuild(), botParts(), "bot", $("battleMode").value === "reverse");
   });
-  $("attackA").addEventListener("click", function () { doAttack("A"); });
-  $("attackB").addEventListener("click", function () { doAttack("B"); });
   $("backBtn").addEventListener("click", function () {
     sfx.click();
-    battle = null;
+    showdown = null;
     $("arena").classList.add("hidden");
     $("duelPicker").classList.add("hidden");
   });
 
-  // ---------------- DUEL TEMAN ----------------
+  // ---------------- DUEL TEMAN (SHOWDOWN 1 layar) ----------------
   $("duelBtn").addEventListener("click", function () {
     sfx.click();
-    if (!save.fighter) { toast("Lo harus punya fighter dulu (gabung 2 karakter)."); return; }
+    if (!partsFromBuild()) { toast("Lo harus punya fighter dulu (isi 5 slot di Power Building)."); return; }
     duelSelected = [];
     $("arena").classList.add("hidden");
     $("duelPicker").classList.remove("hidden");
@@ -369,7 +482,7 @@
         var i = duelSelected.indexOf(id);
         if (i !== -1) duelSelected.splice(i, 1);
         else {
-          if (duelSelected.length >= 2) { toast("Maksimal 2 karakter."); return; }
+          if (duelSelected.length >= 5) { toast("Maksimal 5 karakter (satu per slot)."); return; }
           duelSelected.push(id);
         }
         renderDuelGrid(); renderDuelSlots();
@@ -377,20 +490,20 @@
     });
   }
   function renderDuelSlots() {
-    function t(i) {
+    var html = "";
+    SLOT_DEFS.forEach(function (d, i) {
       var c = duelSelected[i] ? charById(duelSelected[i]) : null;
-      return "Slot " + (i + 1) + ": " + (c ? c.name + " [" + c.rarity + "]" : "-");
-    }
-    $("duelSlot1").textContent = t(0);
-    $("duelSlot2").textContent = t(1);
+      html += '<div class="duel-slot-row"><span class="slot-label">' + d.label + '</span><span>' + (c ? esc(c.name) + " (" + statOf(c, d.key) + ")" : "-") + '</span></div>';
+    });
+    $("duelSlots").innerHTML = html;
   }
   $("duelSearch").addEventListener("input", renderDuelGrid);
   $("duelStartBtn").addEventListener("click", function () {
     sfx.click();
-    if (duelSelected.length < 2) { toast("Teman pilih 2 karakter dulu."); return; }
-    var c1 = charById(duelSelected[0]), c2 = charById(duelSelected[1]);
-    var p2 = makeFighterFrom(c1, c2, "P2 " + c1.name + "-" + c2.name);
-    startBattle(save.fighter, p2, "duel");
+    if (duelSelected.length < 5) { toast("Teman pilih 5 karakter dulu."); return; }
+    var parts = {};
+    SLOT_DEFS.forEach(function (d, i) { parts[d.key] = duelSelected[i]; });
+    startShowdown(partsFromBuild(), parts, "duel", $("battleMode").value === "reverse");
   });
 
   // ---------------- GALERI + TAB + SUARA ----------------
