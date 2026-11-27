@@ -1,0 +1,130 @@
+// Roster Anime Fighter (web) — 90 karakter, viral + lama.
+// Nama, asal anime, dan jurus andalan dicek dari kanon masing-masing seri.
+// Stat = angka balance game per rarity (bukan power level resmi — tidak ada
+// skala resmi lintas anime). Foto diisi otomatis dari Kitsu (media.kitsu.app)
+// oleh script fetch-images.py — field img kosong = foto belum ke-fetch.
+const CHARACTERS = [
+  // ---------- Dragon Ball ----------
+  { id: "goku", name: "Goku", anime: "Dragon Ball", move: "Kamehameha", rarity: "Common", atk: 12, def: 8, spd: 11, hp: 100, color: "#ff8228", kitsu: "Son Goku", img: "https://media.kitsu.app/character/17885/image/large-723f1c3619cf96b68254eea9533c8f56.jpeg" },
+  { id: "vegeta", name: "Vegeta", anime: "Dragon Ball", move: "Galick Gun", rarity: "Rare", atk: 19, def: 11, spd: 13, hp: 120, color: "#3b6fe0", kitsu: "Vegeta", img: "https://media.kitsu.app/character/4196/image/large-5e2281a2faf1d21e360486fde96173b8.jpeg" },
+  { id: "gohan", name: "Gohan", anime: "Dragon Ball", move: "Masenko", rarity: "Rare", atk: 17, def: 12, spd: 12, hp: 125, color: "#8b5cf6", kitsu: "Son Gohan", img: "https://media.kitsu.app/character/4231/image/large-ab8262331e60062c2f43f909f0edccf9.jpeg" },
+  { id: "piccolo", name: "Piccolo", anime: "Dragon Ball", move: "Special Beam Cannon", rarity: "Rare", atk: 16, def: 14, spd: 11, hp: 130, color: "#22a355", kitsu: "Piccolo", img: "https://media.kitsu.app/character/4121/image/large-0d1da4796f93d67e7ea441a410dbf9d4.jpeg" },
+  { id: "krillin", name: "Krillin", anime: "Dragon Ball", move: "Destructo Disc", rarity: "Common", atk: 10, def: 9, spd: 12, hp: 95, color: "#f5c518", kitsu: "Krillin", img: "https://media.kitsu.app/character/4115/image/large-cdd70ddf09bb04b39a49801a3624ab20.jpeg" },
+  { id: "frieza", name: "Frieza", anime: "Dragon Ball", move: "Death Beam", rarity: "Epic", atk: 26, def: 16, spd: 17, hp: 150, color: "#a78bfa", kitsu: "Frieza", img: "https://media.kitsu.app/character/4209/image/large-5bece8730318541fbaf3ba0eb420708b.jpeg" },
+  { id: "cell", name: "Cell", anime: "Dragon Ball", move: "Solar Kamehameha", rarity: "Epic", atk: 27, def: 17, spd: 15, hp: 160, color: "#4ade80", kitsu: "Cell", img: "https://media.kitsu.app/character/4210/image/large-1cbf57b72ff24ef578d9ef6e8a3d2521.jpeg" },
+  { id: "broly", name: "Broly", anime: "Dragon Ball", move: "Gigantic Roar", rarity: "Legendary", atk: 40, def: 22, spd: 16, hp: 220, color: "#b4dc3c", kitsu: "Broly", img: "https://media.kitsu.app/character/11304/image/large-caea026107b31349fc587ff5a7859f2a.jpeg" },
+  { id: "beerus", name: "Beerus", anime: "Dragon Ball", move: "Hakai", rarity: "Legendary", atk: 38, def: 24, spd: 19, hp: 210, color: "#7c5cbf", kitsu: "Beerus", img: "https://media.kitsu.app/character/37889/image/large-d0ea6ebdd583eba25aa7b2ab6378c527.jpeg" },
+  { id: "jiren", name: "Jiren", anime: "Dragon Ball", move: "Power Impact", rarity: "Legendary", atk: 39, def: 25, spd: 17, hp: 215, color: "#9ca3af", kitsu: "Jiren", img: "https://media.kitsu.app/character/95670/image/large-597f67dda9f453a2f87dfa30f8b4cd97.jpeg" },
+  { id: "goku_black", name: "Goku Black", anime: "Dragon Ball", move: "Black Kamehameha", rarity: "Legendary", atk: 37, def: 23, spd: 18, hp: 205, color: "#f472b6", kitsu: "Goku Black", img: "https://media.kitsu.app/character/64903/image/large-17e01842d7241261e2caecbc857defc9.jpeg" },
+  { id: "goku_ui", name: "Goku (Ultra Instinct)", anime: "Dragon Ball", move: "Kamehameha", rarity: "Legendary", atk: 41, def: 23, spd: 22, hp: 205, color: "#e5e7eb", kitsu: "Son Goku", img: "https://media.kitsu.app/character/17885/image/large-723f1c3619cf96b68254eea9533c8f56.jpeg" },
+  { id: "goku_ssj", name: "Goku (Super Saiyan)", anime: "Dragon Ball", move: "Super Kamehameha", rarity: "Rare", atk: 19, def: 10, spd: 14, hp: 120, color: "#ffd700", kitsu: "Son Goku", img: "https://media.kitsu.app/character/17885/image/large-723f1c3619cf96b68254eea9533c8f56.jpeg" },
+  // ---------- Naruto ----------
+  { id: "naruto", name: "Naruto", anime: "Naruto", move: "Rasengan", rarity: "Common", atk: 11, def: 9, spd: 10, hp: 110, color: "#ffdc3c", kitsu: "Naruto Uzumaki", img: "https://media.kitsu.app/character/221/image/large-c1fc8267b7061dfbef126d7f30110fe9.jpeg" },
+  { id: "sasuke", name: "Sasuke", anime: "Naruto", move: "Chidori", rarity: "Common", atk: 12, def: 9, spd: 12, hp: 100, color: "#46408c", kitsu: "Sasuke Uchiha", img: "https://media.kitsu.app/character/220/image/large-e06914761ca9f6974b9c6564496bee69.jpeg" },
+  { id: "sakura", name: "Sakura", anime: "Naruto", move: "Cherry Blossom Impact", rarity: "Common", atk: 10, def: 10, spd: 9, hp: 105, color: "#f9a8d4", kitsu: "Sakura Haruno", img: "https://media.kitsu.app/character/8623/image/large-e84b973e5620c36fa5ed3f299e5011ac.jpeg" },
+  { id: "kakashi", name: "Kakashi", anime: "Naruto", move: "Lightning Blade", rarity: "Rare", atk: 18, def: 13, spd: 15, hp: 120, color: "#64748b", kitsu: "Kakashi Hatake", img: "https://media.kitsu.app/character/219/image/large-49ce409ca2cecb3de75f3086432280a4.jpeg" },
+  { id: "rocklee", name: "Rock Lee", anime: "Naruto", move: "Primary Lotus", rarity: "Rare", atk: 17, def: 11, spd: 16, hp: 115, color: "#16a34a", kitsu: "Rock Lee", img: "https://media.kitsu.app/character/375/image/large-52289a225effd311dbb3dfbf29029275.jpeg" },
+  { id: "gaara", name: "Gaara", anime: "Naruto", move: "Sand Coffin", rarity: "Epic", atk: 24, def: 20, spd: 12, hp: 165, color: "#d6a05a", kitsu: "Gaara", img: "https://media.kitsu.app/character/222/image/large-c2ff41b71160d154eff475fccb26bd99.jpeg" },
+  { id: "jiraiya", name: "Jiraiya", anime: "Naruto", move: "Giant Rasengan", rarity: "Epic", atk: 25, def: 15, spd: 14, hp: 155, color: "#e5e7eb", kitsu: "Jiraiya", img: "https://media.kitsu.app/character/226/image/large-eda2d9851222507a458dd7af414b8402.jpeg" },
+  { id: "itachi", name: "Itachi", anime: "Naruto", move: "Amaterasu", rarity: "Epic", atk: 26, def: 16, spd: 17, hp: 145, color: "#aa1e28", kitsu: "Itachi Uchiha", img: "https://media.kitsu.app/character/388/image/large-453bbade6e85c055eb13a5109e869a91.jpeg" },
+  { id: "pain", name: "Pain", anime: "Naruto", move: "Almighty Push", rarity: "Epic", atk: 27, def: 18, spd: 14, hp: 160, color: "#ea580c", kitsu: "Pain", img: "https://media.kitsu.app/character/93436/image/large-9a999ef6fbc9180a348b935bb7d31e61.jpeg" },
+  { id: "minato", name: "Minato", anime: "Naruto", move: "Flying Raijin", rarity: "Legendary", atk: 36, def: 22, spd: 22, hp: 195, color: "#facc15", kitsu: "Minato Namikaze", img: "https://media.kitsu.app/character/371/image/large-d15e65845859b391b7be03e926f6e770.jpeg" },
+  { id: "madara", name: "Madara", anime: "Naruto", move: "Perfect Susanoo", rarity: "Legendary", atk: 37, def: 24, spd: 18, hp: 205, color: "#8c2828", kitsu: "Madara Uchiha", img: "https://media.kitsu.app/character/17955/image/large-62c40c58ececd0b6c3b14b2f40811056.jpeg" },
+  { id: "naruto_sage", name: "Naruto (Sage Mode)", anime: "Naruto", move: "Rasenshuriken", rarity: "Epic", atk: 27, def: 15, spd: 15, hp: 155, color: "#ff6e28", kitsu: "Naruto Uzumaki", img: "https://media.kitsu.app/character/221/image/large-c1fc8267b7061dfbef126d7f30110fe9.jpeg" },
+  // ---------- One Piece ----------
+  { id: "luffy", name: "Luffy", anime: "One Piece", move: "Gum-Gum Pistol", rarity: "Common", atk: 11, def: 10, spd: 10, hp: 105, color: "#dc3232", kitsu: "Monkey D. Luffy", img: "https://media.kitsu.app/character/411/image/large-64d0f1d6124fcf8f85ef4c15e4f30999.jpeg" },
+  { id: "zoro", name: "Zoro", anime: "One Piece", move: "Oni Giri", rarity: "Rare", atk: 20, def: 12, spd: 11, hp: 120, color: "#50c878", kitsu: "Roronoa Zoro", img: "https://media.kitsu.app/character/413/image/large-c803c65112314674c7b9b9f2533b4537.jpeg" },
+  { id: "sanji", name: "Sanji", anime: "One Piece", move: "Diable Jambe", rarity: "Rare", atk: 18, def: 11, spd: 15, hp: 115, color: "#2563eb", kitsu: "Sanji", img: "https://media.kitsu.app/character/407/image/large-1abb382eb2363d51722c93fe67c0a5d6.jpeg" },
+  { id: "nami", name: "Nami", anime: "One Piece", move: "Thunderbolt Tempo", rarity: "Common", atk: 9, def: 8, spd: 11, hp: 95, color: "#fb923c", kitsu: "Nami", img: "https://media.kitsu.app/character/408/image/large-1846d1b797fe47ced34f7277608dd883.jpeg" },
+  { id: "usopp", name: "Usopp", anime: "One Piece", move: "Firebird Star", rarity: "Common", atk: 9, def: 9, spd: 10, hp: 100, color: "#92400e", kitsu: "Usopp", img: "https://media.kitsu.app/character/409/image/large-fef1d29b6fdd25458fbddd6c293eab4a.jpeg" },
+  { id: "robin", name: "Robin", anime: "One Piece", move: "Dos Fleur: Clutch", rarity: "Rare", atk: 17, def: 12, spd: 12, hp: 120, color: "#7e57c2", kitsu: "Nico Robin", img: "https://media.kitsu.app/character/412/image/large-0f15a465b8e259691d630143877d19d8.jpeg" },
+  { id: "ace", name: "Ace", anime: "One Piece", move: "Fire Fist", rarity: "Epic", atk: 26, def: 14, spd: 16, hp: 150, color: "#f97316", kitsu: "Portgas D. Ace", img: "https://media.kitsu.app/character/885/image/large-def5009097f07d170c13ee6ab08d7fb0.jpeg" },
+  { id: "law", name: "Law", anime: "One Piece", move: "Room: Amputate", rarity: "Epic", atk: 25, def: 16, spd: 15, hp: 150, color: "#facc15", kitsu: "Trafalgar Law", img: "https://media.kitsu.app/character/864/image/large-26180539e38e2393bfd4eab34bcf79c8.jpeg" },
+  { id: "mihawk", name: "Mihawk", anime: "One Piece", move: "Yoru Slash", rarity: "Epic", atk: 28, def: 18, spd: 14, hp: 150, color: "#3c3250", kitsu: "Dracule Mihawk", img: "https://media.kitsu.app/character/853/image/large-24ede650409e0f34944f1545682dbf89.jpeg" },
+  { id: "shanks", name: "Shanks", anime: "One Piece", move: "Divine Departure", rarity: "Legendary", atk: 38, def: 23, spd: 19, hp: 200, color: "#dc2626", kitsu: "Shanks", img: "https://media.kitsu.app/character/416/image/large-adc26b71a046a64558964115481080a5.jpeg" },
+  { id: "whitebeard", name: "Whitebeard", anime: "One Piece", move: "Quake Punch", rarity: "Legendary", atk: 37, def: 26, spd: 13, hp: 220, color: "#f8fafc", kitsu: "Edward Newgate", img: "https://media.kitsu.app/character/880/image/large-84ecd7e1e59ceb166f17ce0f9c202df1.jpeg" },
+  { id: "kaido", name: "Kaido", anime: "One Piece", move: "Blast Breath", rarity: "Legendary", atk: 36, def: 26, spd: 14, hp: 220, color: "#463ca0", kitsu: "Kaido", img: "https://media.kitsu.app/character/41329/image/large-0142ea19440f8598e4080338c1872b42.jpeg" },
+  { id: "luffy_g2", name: "Luffy (Gear 2)", anime: "One Piece", move: "Jet Pistol", rarity: "Rare", atk: 18, def: 9, spd: 16, hp: 115, color: "#ff505a", kitsu: "Monkey D. Luffy", img: "https://media.kitsu.app/character/411/image/large-64d0f1d6124fcf8f85ef4c15e4f30999.jpeg" },
+  { id: "luffy_g5", name: "Luffy (Gear 5)", anime: "One Piece", move: "Bajrang Gun", rarity: "Legendary", atk: 38, def: 21, spd: 20, hp: 200, color: "#f5f5f5", kitsu: "Monkey D. Luffy", img: "https://media.kitsu.app/character/411/image/large-64d0f1d6124fcf8f85ef4c15e4f30999.jpeg" },
+  // ---------- Bleach ----------
+  { id: "ichigo", name: "Ichigo", anime: "Bleach", move: "Getsuga Tensho", rarity: "Rare", atk: 19, def: 12, spd: 14, hp: 125, color: "#f97316", kitsu: "Ichigo Kurosaki", img: "https://media.kitsu.app/character/5451/image/large-df996b433fd1f4783e7aa8f05dbc7b54.jpeg" },
+  { id: "rukia", name: "Rukia", anime: "Bleach", move: "Tsukishiro", rarity: "Common", atk: 11, def: 10, spd: 12, hp: 100, color: "#60a5fa", kitsu: "Rukia Kuchiki", img: "https://media.kitsu.app/character/5450/image/large-36ddb4716162135dd2fa9a1306b81343.jpeg" },
+  { id: "byakuya", name: "Byakuya", anime: "Bleach", move: "Senbonzakura", rarity: "Epic", atk: 25, def: 17, spd: 16, hp: 150, color: "#f9a8d4", kitsu: "Byakuya Kuchiki", img: "https://media.kitsu.app/character/5609/image/large-2bc2e512420f2556f34226cf95c5d6d4.jpeg" },
+  { id: "kenpachi", name: "Kenpachi", anime: "Bleach", move: "Nozarashi", rarity: "Epic", atk: 28, def: 15, spd: 13, hp: 170, color: "#111827", kitsu: "Kenpachi Zaraki", img: "https://media.kitsu.app/character/5702/image/large-e8770e7de6541973a1bc81715caf34e4.jpeg" },
+  { id: "aizen", name: "Aizen", anime: "Bleach", move: "Kurohitsugi", rarity: "Legendary", atk: 37, def: 23, spd: 18, hp: 200, color: "#78350f", kitsu: "Sosuke Aizen", img: "https://media.kitsu.app/character/5540/image/large-321f1f0a7260e69c6621bce5aacb9e93.jpeg" },
+  { id: "urahara", name: "Urahara", anime: "Bleach", move: "Benihime", rarity: "Epic", atk: 24, def: 16, spd: 17, hp: 145, color: "#16a34a", kitsu: "Kisuke Urahara", img: "https://media.kitsu.app/character/5693/image/large-ab55912f60a7096f03388c6c07019433.jpeg" },
+  { id: "ulquiorra", name: "Ulquiorra", anime: "Bleach", move: "Cero Oscuras", rarity: "Epic", atk: 26, def: 15, spd: 16, hp: 150, color: "#15803d", kitsu: "Ulquiorra Cifer", img: "https://media.kitsu.app/character/5554/image/large-704af60a7c1687bb4ed5fd555ad5bf18.jpeg" },
+  { id: "yamamoto", name: "Yamamoto", anime: "Bleach", move: "Ryujin Jakka", rarity: "Legendary", atk: 38, def: 24, spd: 15, hp: 210, color: "#dc2626", kitsu: "Genryusai Shigekuni Yamamoto", img: "https://media.kitsu.app/character/5699/image/large-eac2afa2d925f121915319d0ef08a8b7.jpeg" },
+  // ---------- Jujutsu Kaisen ----------
+  { id: "gojo", name: "Gojo", anime: "Jujutsu Kaisen", move: "Hollow Purple", rarity: "Epic", atk: 27, def: 17, spd: 16, hp: 150, color: "#96c8ff", kitsu: "Satoru Gojo", img: "https://media.kitsu.app/character/105898/image/large-dade312c5cf43c0fed3cf8803975d641.jpeg" },
+  { id: "yuji", name: "Yuji", anime: "Jujutsu Kaisen", move: "Divergent Fist", rarity: "Rare", atk: 18, def: 12, spd: 13, hp: 125, color: "#f472b6", kitsu: "Yuji Itadori", img: "https://media.kitsu.app/character/105902/image/large-c92b091ded03c201f9465fd35bdb9d64.jpeg" },
+  { id: "megumi", name: "Megumi", anime: "Jujutsu Kaisen", move: "Ten Shadows", rarity: "Rare", atk: 17, def: 13, spd: 13, hp: 120, color: "#1e3a8a", kitsu: "Megumi Fushiguro", img: "https://media.kitsu.app/character/105901/image/large-935d2898b020c612583508c7b491581d.jpeg" },
+  { id: "sukuna", name: "Sukuna", anime: "Jujutsu Kaisen", move: "Dismantle", rarity: "Legendary", atk: 39, def: 22, spd: 18, hp: 205, color: "#dc2626", kitsu: "Ryomen Sukuna", img: "https://media.kitsu.app/character/105906/image/large-93dbd28e04464d9019c97f089f6edcfc.jpeg" },
+  { id: "yuta", name: "Yuta", anime: "Jujutsu Kaisen", move: "Rika", rarity: "Epic", atk: 26, def: 16, spd: 15, hp: 150, color: "#1e3a8a", kitsu: "Yuta Okkotsu", img: "https://media.kitsu.app/character/105900/image/large-3a513cc8b5124f0683fb61ca9ef316a5.jpeg" },
+  { id: "toji", name: "Toji", anime: "Jujutsu Kaisen", move: "Playful Cloud", rarity: "Epic", atk: 25, def: 18, spd: 17, hp: 155, color: "#16a34a", kitsu: "Toji Fushiguro", img: "https://media.kitsu.app/character/68304/image/large-c8b62acfc24a07bcc24c15be0c9b1d9d.jpeg" },
+  // ---------- Demon Slayer ----------
+  { id: "tanjiro", name: "Tanjiro", anime: "Demon Slayer", move: "Hinokami Kagura", rarity: "Rare", atk: 18, def: 12, spd: 13, hp: 125, color: "#dc2626", kitsu: "Tanjiro Kamado", img: "https://media.kitsu.app/character/75716/image/large-ae410f9ef35db0c5c7b3947a0512c5ae.jpeg" },
+  { id: "nezuko", name: "Nezuko", anime: "Demon Slayer", move: "Exploding Blood", rarity: "Rare", atk: 17, def: 13, spd: 14, hp: 120, color: "#f9a8d4", kitsu: "Nezuko Kamado", img: "https://media.kitsu.app/character/74558/image/large-7ef0358ec024b712f60d79a5bd81d6d2.jpeg" },
+  { id: "zenitsu", name: "Zenitsu", anime: "Demon Slayer", move: "Thunderclap and Flash", rarity: "Rare", atk: 19, def: 10, spd: 16, hp: 115, color: "#facc15", kitsu: "Zenitsu Agatsuma", img: "https://media.kitsu.app/character/85514/image/large-126d3dc237816508eecfa4f40f2fb8a1.jpeg" },
+  { id: "rengoku", name: "Rengoku", anime: "Demon Slayer", move: "Flame Breathing", rarity: "Epic", atk: 26, def: 15, spd: 14, hp: 155, color: "#f97316", kitsu: "Kyojuro Rengoku", img: "https://media.kitsu.app/character/67543/image/large-f75fdb4db9d8c0bb4bc672e918dec53a.jpeg" },
+  { id: "muzan", name: "Muzan", anime: "Demon Slayer", move: "Blood Demon Art", rarity: "Legendary", atk: 37, def: 24, spd: 17, hp: 205, color: "#111827", kitsu: "Muzan Kibutsuji", img: "" },
+  // ---------- My Hero Academia ----------
+  { id: "deku", name: "Deku", anime: "My Hero Academia", move: "Detroit Smash", rarity: "Rare", atk: 17, def: 11, spd: 13, hp: 125, color: "#1e8c46", kitsu: "Izuku Midoriya", img: "https://media.kitsu.app/character/61663/image/large-8d615124cd6698147db553491a42fe14.jpeg" },
+  { id: "bakugo", name: "Bakugo", anime: "My Hero Academia", move: "Howitzer Impact", rarity: "Rare", atk: 19, def: 11, spd: 14, hp: 120, color: "#f97316", kitsu: "Katsuki Bakugo", img: "https://media.kitsu.app/character/61661/image/large-5c2dfc263c9a1102b4b935c6ec4d7cc9.jpeg" },
+  { id: "todoroki", name: "Todoroki", anime: "My Hero Academia", move: "Heaven-Piercing Ice Wall", rarity: "Epic", atk: 25, def: 17, spd: 13, hp: 150, color: "#7dd3fc", kitsu: "Shoto Todoroki", img: "https://media.kitsu.app/character/61664/image/large-e18a2152bfc06b46dbf1d9e1418297b8.jpeg" },
+  { id: "allmight", name: "All Might", anime: "My Hero Academia", move: "United States of Smash", rarity: "Legendary", atk: 38, def: 24, spd: 16, hp: 210, color: "#2563eb", kitsu: "All Might", img: "https://media.kitsu.app/character/61660/image/large-963c3fe7be1a12cdbc11f824377752de.jpeg" },
+  { id: "shigaraki", name: "Shigaraki", anime: "My Hero Academia", move: "Decay", rarity: "Legendary", atk: 36, def: 22, spd: 18, hp: 200, color: "#6b7280", kitsu: "Tomura Shigaraki", img: "https://media.kitsu.app/character/87109/image/large-79774deab0f67884b2c07ef4d518ec88.jpeg" },
+  // ---------- Hunter x Hunter ----------
+  { id: "gon", name: "Gon", anime: "Hunter x Hunter", move: "Jajanken: Rock", rarity: "Rare", atk: 18, def: 11, spd: 14, hp: 120, color: "#16a34a", kitsu: "Gon Freecss", img: "https://media.kitsu.app/character/2816/image/large-f97eb9282aac6b0f533a08135064fdf1.jpeg" },
+  { id: "killua", name: "Killua", anime: "Hunter x Hunter", move: "Godspeed", rarity: "Rare", atk: 18, def: 12, spd: 17, hp: 115, color: "#93c5fd", kitsu: "Killua Zoldyck", img: "https://media.kitsu.app/character/2818/image/large-0f0ec75d826aac84503fa31a08ce5f51.jpeg" },
+  { id: "hisoka", name: "Hisoka", anime: "Hunter x Hunter", move: "Bungee Gum", rarity: "Epic", atk: 25, def: 15, spd: 17, hp: 150, color: "#f472b6", kitsu: "Hisoka Morow", img: "https://media.kitsu.app/character/2819/image/large-34c17a3757477617d5a2f2353c81319a.jpeg" },
+  { id: "kurapika", name: "Kurapika", anime: "Hunter x Hunter", move: "Chain Jail", rarity: "Epic", atk: 24, def: 16, spd: 15, hp: 150, color: "#fde68a", kitsu: "Kurapika", img: "https://media.kitsu.app/character/2815/image/large-b45c8ecd3a6c8194ed45068ae72c3d4a.jpeg" },
+  // ---------- One Punch Man ----------
+  { id: "saitama", name: "Saitama", anime: "One Punch Man", move: "Serious Punch", rarity: "Legendary", atk: 42, def: 20, spd: 20, hp: 210, color: "#facc15", kitsu: "Saitama", img: "https://media.kitsu.app/character/57048/image/large-dde9c3b0f624d3e2dd60ca0d028cfe14.jpeg" },
+  { id: "genos", name: "Genos", anime: "One Punch Man", move: "Incineration Cannon", rarity: "Epic", atk: 26, def: 15, spd: 15, hp: 150, color: "#fde047", kitsu: "Genos", img: "https://media.kitsu.app/character/57047/image/large-39039f6bdd5893fa767b16587bbeca7f.jpeg" },
+  { id: "garou", name: "Garou", anime: "One Punch Man", move: "Whirlwind Iron Cutting Fist", rarity: "Epic", atk: 27, def: 16, spd: 16, hp: 155, color: "#dc2626", kitsu: "Garou", img: "https://media.kitsu.app/character/84805/image/large-572beb51ddcc8b5a521e8bfef6de4232.jpeg" },
+  // ---------- Attack on Titan ----------
+  { id: "eren", name: "Eren", anime: "Attack on Titan", move: "Attack Titan", rarity: "Rare", atk: 18, def: 13, spd: 12, hp: 130, color: "#78350f", kitsu: "Eren Yeager", img: "https://media.kitsu.app/character/38507/image/large-d8c8bfe4a521f169924344bbcdce901c.jpeg" },
+  { id: "levi", name: "Levi", anime: "Attack on Titan", move: "ODM Spin Attack", rarity: "Epic", atk: 26, def: 15, spd: 19, hp: 140, color: "#6b7280", kitsu: "Levi Ackerman", img: "https://media.kitsu.app/character/39556/image/large-a9a0df71df0655fc58450f17a97b9f41.jpeg" },
+  { id: "mikasa", name: "Mikasa", anime: "Attack on Titan", move: "Dual Blade", rarity: "Rare", atk: 19, def: 13, spd: 16, hp: 120, color: "#dc2626", kitsu: "Mikasa Ackerman", img: "https://media.kitsu.app/character/38505/image/large-b5f914a557b487179e3b93fbc73f4371.jpeg" },
+  // ---------- JoJo's Bizarre Adventure ----------
+  { id: "jotaro", name: "Jotaro", anime: "JoJo's Bizarre Adventure", move: "Star Platinum Rush", rarity: "Epic", atk: 26, def: 17, spd: 15, hp: 150, color: "#1e3a8a", kitsu: "Jotaro Kujo", img: "https://media.kitsu.app/character/9483/image/large-d4f31f8da9d18f99adea21a4277e0b3d.jpeg" },
+  { id: "dio", name: "Dio", anime: "JoJo's Bizarre Adventure", move: "The World", rarity: "Legendary", atk: 37, def: 22, spd: 17, hp: 200, color: "#fde68a", kitsu: "Dio Brando", img: "https://media.kitsu.app/character/9486/image/large-9834f8f2bf30387716b48d243aa9f405.jpeg" },
+  { id: "giorno", name: "Giorno", anime: "JoJo's Bizarre Adventure", move: "Gold Experience", rarity: "Epic", atk: 25, def: 16, spd: 15, hp: 150, color: "#fde68a", kitsu: "Giorno Giovanna", img: "https://media.kitsu.app/character/48031/image/large-1c651acc2697da83270594df233dd61e.jpeg" },
+  { id: "josuke", name: "Josuke", anime: "JoJo's Bizarre Adventure", move: "Crazy Diamond", rarity: "Rare", atk: 18, def: 14, spd: 13, hp: 125, color: "#f472b6", kitsu: "Josuke Higashikata", img: "https://media.kitsu.app/character/92548/image/large-4263fe5815dbe08ed456bbaedfb1e488.jpeg" },
+  // ---------- Black Clover ----------
+  { id: "asta", name: "Asta", anime: "Black Clover", move: "Demon-Slayer Sword", rarity: "Rare", atk: 18, def: 12, spd: 14, hp: 120, color: "#111827", kitsu: "Asta", img: "https://media.kitsu.app/character/90763/image/large-7252c49471ec4063fed07a9f5424e770.jpeg" },
+  { id: "yuno", name: "Yuno", anime: "Black Clover", move: "Spirit of Zephyr", rarity: "Epic", atk: 24, def: 15, spd: 16, hp: 145, color: "#fde68a", kitsu: "Yuno Grinberryall", img: "https://media.kitsu.app/character/59576/image/large-d9b9970a27cf53aa28aaaf03f82b1a7a.jpeg" },
+  // ---------- Fairy Tail ----------
+  { id: "natsu", name: "Natsu", anime: "Fairy Tail", move: "Fire Dragon's Roar", rarity: "Rare", atk: 18, def: 11, spd: 14, hp: 120, color: "#f9a8d4", kitsu: "Natsu Dragneel", img: "https://media.kitsu.app/character/29657/image/large-aaf02d31321e7892ebb040d7785d4c47.jpeg" },
+  { id: "erza", name: "Erza", anime: "Fairy Tail", move: "Heaven's Wheel", rarity: "Epic", atk: 25, def: 17, spd: 14, hp: 150, color: "#dc2626", kitsu: "Erza Scarlet", img: "https://media.kitsu.app/character/29661/image/large-9ac3e0ae060f6a728b769e780dbbf3f7.jpeg" },
+  // ---------- Chainsaw Man ----------
+  { id: "denji", name: "Denji", anime: "Chainsaw Man", move: "Chainsaw Slash", rarity: "Epic", atk: 25, def: 15, spd: 15, hp: 150, color: "#fde68a", kitsu: "Denji", img: "https://media.kitsu.app/character/16330/image/large-e624bd12d4e94d675ecfbb51019c01ed.jpeg" },
+  { id: "makima", name: "Makima", anime: "Chainsaw Man", move: "Bang", rarity: "Legendary", atk: 36, def: 23, spd: 18, hp: 195, color: "#dc2626", kitsu: "Makima", img: "https://media.kitsu.app/character/105895/image/large-75ed06665947d0eff6e950ad44d4aacf.jpeg" },
+  { id: "power", name: "Power", anime: "Chainsaw Man", move: "Blood Hammer", rarity: "Rare", atk: 17, def: 12, spd: 13, hp: 120, color: "#fde68a", kitsu: "Power", img: "https://media.kitsu.app/character/105896/image/large-fcd15c5523c3678466b41c912a4e243d.jpeg" },
+  // ---------- Lainnya (viral + lama) ----------
+  { id: "jinwoo", name: "Sung Jinwoo", anime: "Solo Leveling", move: "Shadow Army", rarity: "Legendary", atk: 38, def: 22, spd: 19, hp: 200, color: "#7c3aed", kitsu: "Sung Jinwoo", img: "" },
+  { id: "mob", name: "Mob", anime: "Mob Psycho 100", move: "100% Explosion", rarity: "Epic", atk: 26, def: 16, spd: 14, hp: 150, color: "#111827", kitsu: "Shigeo Kageyama", img: "https://media.kitsu.app/character/66790/image/large-a6c3962084ba15ea72157c482e16700e.jpeg" },
+  { id: "edward", name: "Edward Elric", anime: "Fullmetal Alchemist", move: "Alchemy", rarity: "Rare", atk: 17, def: 13, spd: 14, hp: 120, color: "#fde68a", kitsu: "Edward Elric", img: "https://media.kitsu.app/character/2536/image/large-1f900f32a83c153ac2e4c253e3c92f10.jpeg" },
+  { id: "kaneki", name: "Kaneki", anime: "Tokyo Ghoul", move: "Kagune", rarity: "Epic", atk: 25, def: 15, spd: 16, hp: 150, color: "#f8fafc", kitsu: "Ken Kaneki", img: "https://media.kitsu.app/character/48622/image/large-9a93ba3fcbfe5427d0c9bac9561f36c4.jpeg" },
+  { id: "kirito", name: "Kirito", anime: "Sword Art Online", move: "Starburst Stream", rarity: "Rare", atk: 19, def: 12, spd: 15, hp: 120, color: "#111827", kitsu: "Kirito", img: "https://media.kitsu.app/character/35729/image/large-3661dc425173a73b0480ece368cf6a9f.jpeg" },
+  { id: "gintoki", name: "Gintoki", anime: "Gintama", move: "Lake Toya", rarity: "Rare", atk: 18, def: 13, spd: 13, hp: 125, color: "#e5e7eb", kitsu: "Gintoki Sakata", img: "https://media.kitsu.app/character/11441/image/large-e99ffd5d45943dcabe07a53bfc73235b.jpeg" },
+];
+
+const RARITIES = {
+  Common: { weight: 55, color: "#b8b8b8" },
+  Rare: { weight: 26, color: "#3c8cff" },
+  Epic: { weight: 14, color: "#aa50ff" },
+  Legendary: { weight: 5, color: "#ffb400" },
+};
+
+function charById(id) { return CHARACTERS.find(function (c) { return c.id === id; }); }
+function charsByRarity(r) { return CHARACTERS.filter(function (c) { return c.rarity === r; }); }
+function rollCharacter() {
+  var total = 0, r;
+  for (r in RARITIES) total += RARITIES[r].weight;
+  var roll = Math.random() * total, acc = 0, picked = "Common";
+  for (r in RARITIES) { acc += RARITIES[r].weight; if (roll <= acc) { picked = r; break; } }
+  var pool = charsByRarity(picked);
+  return pool[Math.floor(Math.random() * pool.length)];
+}

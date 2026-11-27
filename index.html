@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Anime Fighter — Spin, Gabung, Battle!</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">ANIME FIGHTER</div>
+  <div class="badges">
+    <span class="badge" id="cashBadge">Cash: 200</span>
+    <span class="badge" id="winsBadge">Wins: 0</span>
+    <span class="badge" id="spinBadge">Free Spin: 3</span>
+    <button class="badge btn-small" id="soundBtn">Suara: ON</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="main">MAIN</button>
+  <button class="tab" data-tab="battle">BATTLE</button>
+  <button class="tab" data-tab="gallery">SEMUA KARAKTER <span id="galleryCount"></span></button>
+</nav>
+
+<main>
+  <!-- ============ TAB MAIN ============ -->
+  <section id="tab-main" class="tabpage active">
+    <div class="panel spin-panel">
+      <h2>SPIN KARAKTER</h2>
+      <p class="hint">Spin buat dapetin karakter anime. Gabung 2 karakter jadi 1 fighter, terus bawa battle.</p>
+      <button id="spinBtn" class="btn btn-green btn-big">SPIN</button>
+      <div id="spinResult" class="spin-result"></div>
+    </div>
+
+    <div class="panel">
+      <h2>FIGHTER LO</h2>
+      <div id="fighterBox" class="fighter-box"></div>
+    </div>
+
+    <div class="panel">
+      <h2>KOLEKSI LO <span class="muted" id="collectionCount"></span></h2>
+      <p class="hint">Klik 2 karakter buat dipilih, terus gabung di bawah.</p>
+      <div id="collectionGrid" class="grid"></div>
+      <div class="combine-box">
+        <div class="slots">
+          <div class="slot" id="slot1">Slot 1: -</div>
+          <div class="slot" id="slot2">Slot 2: -</div>
+        </div>
+        <input id="fighterName" type="text" maxlength="20" placeholder="Nama fighter (kosong = otomatis)">
+        <button id="combineBtn" class="btn btn-purple btn-big">GABUNG JADI FIGHTER</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB BATTLE ============ -->
+  <section id="tab-battle" class="tabpage">
+    <div class="panel">
+      <h2>BATTLE</h2>
+      <p class="hint">Lawan bot, atau duel teman di satu layar (gantian tap tombol SERANG).</p>
+      <div class="battle-menu">
+        <button id="botBtn" class="btn btn-red btn-big">BATTLE VS BOT</button>
+        <button id="duelBtn" class="btn btn-blue btn-big">DUEL TEMAN (1 LAYAR)</button>
+      </div>
+      <div id="duelPicker" class="duel-picker hidden">
+        <h3>TEMAN PILIH 2 KARAKTER (DARI SEMUA ROSTER)</h3>
+        <input id="duelSearch" type="text" placeholder="Cari karakter...">
+        <div id="duelGrid" class="grid"></div>
+        <div class="slots">
+          <div class="slot" id="duelSlot1">Slot 1: -</div>
+          <div class="slot" id="duelSlot2">Slot 2: -</div>
+        </div>
+        <button id="duelStartBtn" class="btn btn-blue btn-big">MULAI DUEL</button>
+      </div>
+      <div id="arena" class="arena hidden">
+        <div class="fighters">
+          <div class="battle-card" id="cardA"></div>
+          <div class="vs">VS</div>
+          <div class="battle-card" id="cardB"></div>
+        </div>
+        <div id="turnLabel" class="turn-label"></div>
+        <div class="attack-row">
+          <button id="attackA" class="btn btn-red btn-big">SERANG (P1)</button>
+          <button id="attackB" class="btn btn-blue btn-big hidden">SERANG (P2)</button>
+        </div>
+        <div id="battleLog" class="battle-log"></div>
+        <button id="backBtn" class="btn btn-gray">KEMBALI</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB GALERI ============ -->
+  <section id="tab-gallery" class="tabpage">
+    <div class="panel">
+      <h2>SEMUA KARAKTER</h2>
+      <div class="gallery-tools">
+        <input id="gallerySearch" type="text" placeholder="Cari nama / anime / jurus...">
+        <select id="galleryFilter">
+          <option value="">Semua Rarity</option>
+          <option value="Common">Common</option>
+          <option value="Rare">Rare</option>
+          <option value="Epic">Epic</option>
+          <option value="Legendary">Legendary</option>
+        </select>
+      </div>
+      <div id="galleryGrid" class="grid"></div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="characters.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
