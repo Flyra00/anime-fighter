@@ -13,7 +13,6 @@
   <div class="badges">
     <span class="badge" id="cashBadge">Cash: 200</span>
     <span class="badge" id="winsBadge">Wins: 0</span>
-    <button class="badge btn-small" id="soundBtn">Suara: ON</button>
     <button class="badge btn-small" id="settingsBtn">⚙ Atur</button>
   </div>
 </header>
@@ -57,7 +56,7 @@
         </select>
         <button id="botBtn" class="btn btn-red btn-big">SHOWDOWN VS BOT</button>
         <button id="duelBtn" class="btn btn-blue btn-big">DUEL TEMAN (1 LAYAR)</button>
-        <button id="onlineBtn" class="btn btn-purple btn-big">1VS1 ONLINE (BEDA DEVICE)</button>
+        <button id="onlineBtn" class="btn btn-purple btn-big btn-primary">1VS1 ONLINE (BEDA DEVICE)</button>
       </div>
 
       <div id="roomPanel" class="room-panel hidden">
@@ -133,6 +132,10 @@
     <div class="modal-head"><h2>PENGATURAN</h2><button id="settingsCloseBtn" class="btn btn-gray btn-small">TUTUP</button></div>
     <h3>MUSIK LATAR</h3>
     <div class="setting-row">
+      <span class="setting-label">Efek suara</span>
+      <button id="soundBtn" class="btn btn-small">Suara: ON</button>
+    </div>
+    <div class="setting-row">
       <span class="setting-label">Musik</span>
       <button id="musicToggleBtn" class="btn btn-small">ON</button>
     </div>
@@ -153,7 +156,8 @@
       <button id="bgUrlBtn" class="btn btn-blue btn-small">TEMPEL URL GAMBAR</button>
       <label class="btn btn-purple btn-small file-btn">UPLOAD GAMBAR<input id="bgUploadInput" type="file" accept="image/*" hidden></label>
     </div>
-    <p class="hint" id="bgStatus">Arena Malam</p>
+    <p class="hint" id="bgStatus">JoJo Duel</p>
+    <p class="hint">Artwork: JoJo Duel — fan art Pixiv ID 369216; Gojo / Goku / Tanjiro — art resmi Kitsu.</p>
     <button id="settingsResetBtn" class="btn btn-gray" style="width:100%;margin-top:6px">RESET PENGATURAN</button>
   </div>
 </div>
