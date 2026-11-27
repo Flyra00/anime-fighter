@@ -1,16 +1,18 @@
-// Anime Fighter (web) v3 — ala Build An Anime Character (yang bener).
-// Match: 5 ronde. Tiap ronde, tiap pemain gacha 1 karakter acak (rarity ikut
-// rate), pemain pilih SENDIRI karakter itu masuk slot stat mana. Bukan build
-// dulu baru battle — fighter dibangun SELAMA match, kayak di Roblox-nya.
-// Timer 15 dtk/ronde (habis = auto-place ke slot kosong acak), reroll 100 Cash,
-// bot ikut roll tiap ronde (disembunyiin sampai SHOWDOWN), duel teman gantian
-// 1 layar. SHOWDOWN: adu AVG SCORE 5 stat. Save di localStorage (cash/wins).
+// Anime Fighter (web) v3.1 — ala Build An Anime Character.
+// Match: 5 ronde. Tiap ronde, lo + lawan gacha SEPASANG karakter (ditampilin
+// VS, live kayak di Roblox), pemain pilih SENDIRI karakternya masuk slot mana.
+// Stat angka DISEMBUNYIIN selama match (cuma keliatan di galeri) — pasang
+// pakai feeling + pengetahuan soal karakternya. Lawan keliatan live: roll-nya
+// tampil di VS pair, pasangannya keliatan di panel lawan saat lock-in bareng.
+// Timer ACAK 11-20 dtk/ronde (kayak Roblox), reroll sepasang 100 Cash.
+// SHOWDOWN: adu AVG SCORE 5 stat (reveal di sini). Save di localStorage.
 (function () {
   "use strict";
 
   var SAVE_KEY = "animeFighterSaveV1";
   var REROLL_COST = 100;
-  var ROUND_TIME = 15; // detik per ronde, kayak Roblox
+  var ROUND_TIME_MIN = 11; // timer acak per ronde, kayak Roblox (teramati 11-20)
+  var ROUND_TIME_MAX = 20;
   var WIN_REWARD = 100;
   var LOSE_REWARD = 15;
   var DRAW_REWARD = 50;
@@ -26,7 +28,7 @@
 
   var save = loadSave();
   var soundOn = save.soundOn !== false;
-  var match = null;     // match aktif: {mode, reverse, round, turn, a, b, roll, timeLeft, timerId, over}
+  var match = null;     // match aktif: {mode, reverse, round, turn, a, b, pair, roll, timeLeft, timerId, over}
   var showdown = null;  // state showdown aktif
 
   // ---------------- SAVE ----------------
@@ -180,13 +182,15 @@
     return n;
   }
   function activeParts() { return match.turn === "a" ? match.a : match.b; }
-  // Roll 1 karakter acak (rarity ikut rate) yang BELUM dipakai fighter ini.
-  function rollUnique(parts) {
+  // Roll 1 karakter acak (rarity ikut rate) yang BELUM dipakai fighter ini
+  // dan bukan salah satu id di excludeIds (biar sepasang tidak kembar).
+  function rollUnique(parts, excludeIds) {
     var c = null, tries = 0;
     while (tries < 60) {
       c = rollCharacter();
       var used = false;
       SLOT_DEFS.forEach(function (d) { if (parts[d.key] === c.id) used = true; });
+      if (excludeIds && excludeIds.indexOf(c.id) !== -1) used = true;
       if (!used) break;
       tries++;
     }
@@ -210,7 +214,7 @@
       reverse: $("battleMode").value === "reverse",
       round: 1, turn: "a",
       a: emptyParts(), b: emptyParts(),
-      roll: null, timeLeft: ROUND_TIME, timerId: null, over: false
+      pair: { a: null, b: null }, roll: null, timeLeft: ROUND_TIME_MAX, timerId: null, over: false
     };
     save.battles++; persist();
     showdown = null;
@@ -221,20 +225,26 @@
     beginRound();
   }
   function beginRound() {
-    if (match.mode === "bot") botRollAndPlace();
+    // Tiap ronde: gacha SEPASANG karakter (satu buat lo, satu buat lawan),
+    // ditampilin VS kayak di Roblox. Lawan belum pasang — dia lock-in bareng
+    // pas lo pasang (bot) atau pas gilirannya (duel).
+    var pa = rollUnique(match.a, []);
+    var pb = rollUnique(match.b, [pa.id]);
+    match.pair = { a: pa, b: pb };
     beginTurn("a");
   }
-  function botRollAndPlace() {
-    // Bot ikut roll 1 karakter tiap ronde, langsung dipasang greedy
-    // (slot kosong tempat stat-nya paling tinggi). Disembunyiin sampai SHOWDOWN.
-    var c = rollUnique(match.b);
+  // Bot lock-in bareng pas pemain pasang: pasang karakternya (pair.b) greedy
+  // ke slot kosong tempat stat-nya paling tinggi. Keliatan live di panel lawan.
+  function lockOpponent() {
+    var c = match.pair.b;
+    if (!c) return;
     var key = bestSlotFor(c, match.b);
     if (key) match.b[key] = c.id;
   }
   function beginTurn(side) {
     match.turn = side;
-    match.roll = rollUnique(activeParts());
-    match.timeLeft = ROUND_TIME;
+    match.roll = match.pair[side];
+    match.timeLeft = ROUND_TIME_MIN + Math.floor(Math.random() * (ROUND_TIME_MAX - ROUND_TIME_MIN + 1));
     renderMatch();
     startTimer();
   }
@@ -269,13 +279,14 @@
     if (parts[key]) { toast("Slot " + slotLabel(key) + " udah terisi. Pilih slot kosong."); return; }
     parts[key] = match.roll.id;
     sfx.pop();
-    toast(match.roll.name + " masuk slot " + slotLabel(key) + " (" + statOf(match.roll, key) + ").");
+    toast(match.roll.name + " masuk slot " + slotLabel(key) + ".");
     afterPlace();
   }
   function afterPlace() {
     stopTimer();
     if (!match) return;
     if (match.mode === "bot") {
+      lockOpponent(); // lawan lock-in bareng
       if (filledCount(match.a) === 5) { finishMatch(); return; }
       match.round++;
       beginRound();
@@ -288,16 +299,37 @@
     beginRound();
   }
   function rerollCurrent() {
-    if (!match || match.over || !match.roll) return;
+    if (!match || match.over || !match.pair.a || !match.pair.b) return;
     if (save.cash < REROLL_COST) { toast("Cash tidak cukup buat reroll (100 Cash)! Menang battle dulu."); return; }
     save.cash -= REROLL_COST;
-    match.roll = rollUnique(activeParts());
+    // Reroll = sepasang baru (kayak di Roblox): dua-duanya ganti.
+    var pa = rollUnique(activeParts(), []);
+    var pb = rollUnique(match.turn === "a" ? match.b : match.a, [pa.id]);
+    match.pair = match.turn === "a" ? { a: pa, b: pb } : { a: pb, b: pa };
+    match.roll = match.pair[match.turn];
     persist();
     sfx.pop();
     if (match.roll.rarity === "Legendary" || match.roll.rarity === "Mythical" || match.roll.rarity === "Secret") sfx.levelup();
     renderBadges();
     renderMatch();
     toast("Reroll: " + match.roll.name + " [" + match.roll.rarity + "] — " + match.roll.move + "!");
+  }
+  // Panel lawan (LIVE): 5 slot lawan terisi satu per satu tiap ronde,
+  // keliatan karakternya — tanpa angka stat (disembunyiin selama match).
+  function renderOppPanel() {
+    var oppParts = match.mode === "bot" ? match.b : (match.turn === "a" ? match.b : match.a);
+    var oppName = match.mode === "bot" ? "BOT" : "TEMAN";
+    $("oppTitle").textContent = "LAWAN (" + oppName + ") — LIVE";
+    var html = "";
+    SLOT_DEFS.forEach(function (d) {
+      var id = oppParts[d.key];
+      var c = id ? charById(id) : null;
+      html += '<div class="opp-row"><span class="opp-label">' + d.label + '</span>' +
+        (c ? imgHtml(c) + '<span class="opp-name">' + esc(c.name) + '</span>' :
+          '<span class="opp-empty">— menunggu —</span>') +
+        "</div>";
+    });
+    $("oppPanel").innerHTML = html;
   }
   function renderMatch() {
     if (!match) return;
@@ -307,7 +339,17 @@
     if (match.timeLeft <= 5) t.classList.add("timer-danger"); else t.classList.remove("timer-danger");
     var who = match.mode === "bot" ? "" : (match.turn === "a" ? "GILIRAN LO — " : "GILIRAN TEMAN — ");
     $("turnLabel").textContent = who + "pilih slot buat " + match.roll.name + "!";
-    $("rollCard").innerHTML = '<div style="max-width:280px;margin:0 auto">' + cardHtml(match.roll, false) + "</div>";
+    renderOppPanel();
+    // VS pair: roll lo vs roll lawan, live. Tanpa angka stat (class no-stats).
+    var myLabel = match.mode === "bot" ? "LO" : (match.turn === "a" ? "LO" : "TEMAN");
+    var oppLabel = match.mode === "bot" ? "BOT" : (match.turn === "a" ? "TEMAN" : "LO");
+    var myChar = match.pair[match.turn];
+    var oppChar = match.pair[match.turn === "a" ? "b" : "a"];
+    $("rollCard").innerHTML = '<div class="vs-pair no-stats">' +
+      '<div class="vs-side"><div class="vs-side-label">' + myLabel + '</div>' + cardHtml(myChar, false) + "</div>" +
+      '<div class="vs-mid">VS</div>' +
+      '<div class="vs-side"><div class="vs-side-label">' + oppLabel + '</div>' + cardHtml(oppChar, false) + "</div>" +
+      "</div>";
     var rb = $("rerollBtn");
     rb.textContent = "REROLL (100 CASH)";
     rb.disabled = save.cash < REROLL_COST;
@@ -318,11 +360,11 @@
       var c = id ? charById(id) : null;
       html += '<button class="build-slot match-slot" data-slot="' + d.key + '"' + (c ? " disabled" : "") + ">";
       if (c) {
+        // Tanpa angka stat selama match — cuma nama + jurus.
         html += imgHtml(c) +
           '<span class="slot-info"><span class="slot-label">' + d.label + ' <span class="slot-sub">(' + d.sub + ')</span></span>' +
           '<span class="slot-char">' + esc(c.name) + '</span>' +
-          '<span class="slot-move">Jurus: ' + esc(c.move) + '</span></span>' +
-          '<span class="slot-val">' + statOf(c, d.key) + '</span>';
+          '<span class="slot-move">Jurus: ' + esc(c.move) + '</span></span>';
       } else {
         html += '<span class="slot-info"><span class="slot-label">' + d.label + ' <span class="slot-sub">(' + d.sub + ')</span></span>' +
           '<span class="slot-empty">+ Kosong — tap buat pasang ' + esc(match.roll.name) + '</span></span>';
