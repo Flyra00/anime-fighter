@@ -193,8 +193,10 @@
     $("winsBadge").textContent = "Wins: " + save.wins + " (Battle: " + save.battles + ")";
     $("soundBtn").textContent = "Suara: " + (soundOn ? "ON" : "OFF");
   }
-  function cardHtml(c, isSelected) {
-    return '<button class="card rarity-' + c.rarity + (isSelected ? " selected" : "") + '" data-id="' + c.id + '">' +
+  function cardHtml(c, isSelected, staggerIdx) {
+    var staggerCls = typeof staggerIdx === "number" ? " card-stagger" : "";
+    var staggerStyle = typeof staggerIdx === "number" ? ' style="animation-delay:' + (Math.min(staggerIdx, 20) * 30) + 'ms"' : "";
+    return '<button class="card rarity-' + c.rarity + (isSelected ? " selected" : "") + staggerCls + '" data-id="' + c.id + '"' + staggerStyle + '>' +
       imgHtml(c) +
       '<div class="card-body"><div class="rarity-tag">' + c.rarity.toUpperCase() + '</div>' +
       '<div class="card-name">' + esc(c.name) + '</div>' +
@@ -212,7 +214,7 @@
       if (!q) return true;
       return (c.name + " " + c.anime + " " + c.move).toLowerCase().indexOf(q) !== -1;
     });
-    $("galleryGrid").innerHTML = list.map(function (c) { return cardHtml(c, false); }).join("") ||
+    $("galleryGrid").innerHTML = list.map(function (c, idx) { return cardHtml(c, false, idx); }).join("") ||
       '<p class="hint">Tidak ketemu. Coba kata lain.</p>';
     galleryDirty = false;
   }
@@ -487,10 +489,13 @@
     }
     var myChar = match.online ? match.pair[match.mySide] : match.pair[match.turn];
     var oppChar = match.online ? match.pair[match.oppSide] : match.pair[match.turn === "a" ? "b" : "a"];
+    function isRarePulse(c) {
+      return c && (c.rarity === "Legendary" || c.rarity === "Mythical" || c.rarity === "Secret");
+    }
     $("rollCard").innerHTML = '<div class="vs-pair">' +
-      '<div class="vs-side"><div class="vs-side-label">' + esc(myLabel) + '</div>' + cardHtml(myChar, false) + "</div>" +
+      '<div class="vs-side"><div class="vs-side-label">' + esc(myLabel) + '</div><div class="vs-card-wrap' + (isRarePulse(myChar) ? " vs-rare-pulse" : "") + '">' + cardHtml(myChar, false) + "</div></div>" +
       '<div class="vs-mid">VS</div>' +
-      '<div class="vs-side"><div class="vs-side-label">' + esc(oppLabel) + '</div>' + cardHtml(oppChar, false) + "</div>" +
+      '<div class="vs-side"><div class="vs-side-label">' + esc(oppLabel) + '</div><div class="vs-card-wrap' + (isRarePulse(oppChar) ? " vs-rare-pulse" : "") + '">' + cardHtml(oppChar, false) + "</div></div>" +
       "</div>";
     var rb = $("rerollBtn");
     rb.textContent = "REROLL (100 CASH)";
@@ -530,6 +535,7 @@
     if (!match) return;
     match.over = true;
     stopTimer();
+    resetMatchBackBtn();
     var a = partsA || match.a, b = partsB || match.b, mode = match.mode, rev = match.reverse;
     var mySide = match.mySide || "a";
     match = null;
@@ -576,6 +582,34 @@
       sdFighterHtml("LAWAN", showdown.b, b, showdown.revealed) +
       "</div>";
   }
+  function sdRevealGroupHtml(title, parts, oppParts, isWinner, isLoser, baseIdx) {
+    var cls = "sd-team" + (isWinner ? " sd-team-win" : (isLoser ? " sd-team-lose" : ""));
+    var cards = "";
+    SLOT_DEFS.forEach(function (d, i) {
+      var c = charById(parts[d.key]);
+      var oc = charById(oppParts[d.key]);
+      var v = c ? statOf(c, d.key) : 0;
+      var ov = oc ? statOf(oc, d.key) : 0;
+      var cmpCls = v > ov ? " sd-mini-win" : (v < ov ? " sd-mini-lose" : " sd-mini-draw");
+      var delay = (baseIdx + i) * 70;
+      cards += '<div class="sd-mini' + cmpCls + '" style="animation-delay:' + delay + 'ms">' +
+        (c ? imgHtml(c) : '<div class="img-fallback" style="background:#FFF6E5">?</div>') +
+        '<div class="sd-mini-slot">' + esc(d.label) + '</div>' +
+        '<div class="sd-mini-name">' + esc(c ? c.name : "-") + '</div>' +
+        '<div class="sd-mini-val">' + v + '</div>' +
+        '</div>';
+    });
+    return '<div class="' + cls + '">' +
+      '<div class="sd-team-head"><span>' + esc(title) + '</span>' +
+      (isWinner ? '<span class="sd-win-chip">PEMENANG</span>' : '') +
+      '</div><div class="sd-team-cards">' + cards + '</div></div>';
+  }
+  function sdRevealHtml(winner) {
+    return '<div class="sd-reveal">' +
+      sdRevealGroupHtml("TIM LO", showdown.a, showdown.b, winner === "A", winner === "B", 0) +
+      sdRevealGroupHtml("LAWAN", showdown.b, showdown.a, winner === "B", winner === "A", 5) +
+      '</div>';
+  }
   $("showdownBtn").addEventListener("click", function () {
     if (!showdown || showdown.over) return;
     sfx.click();
@@ -607,7 +641,7 @@
     var rematchHtml = "";
     if (showdown.mode === "bot") rematchHtml = '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (BOT BARU)</button>';
     else if (showdown.mode === "online") rematchHtml = '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (ONLINE)</button>';
-    $("showdownResult").innerHTML = '<div class="sd-result">' + esc(msg) + '</div>' + rematchHtml;
+    $("showdownResult").innerHTML = '<div class="sd-result">' + esc(msg) + '</div>' + sdRevealHtml(winner) + rematchHtml;
     $("showdownBtn").classList.add("hidden");
     var rb = $("rematchBtn");
     if (rb) rb.addEventListener("click", function () {
@@ -618,9 +652,20 @@
     });
     renderBadges();
   });
+  var matchBackArmTimer = null;
+  function resetMatchBackBtn() {
+    clearTimeout(matchBackArmTimer);
+    matchBackArmTimer = null;
+    var b = $("matchBackBtn");
+    if (b) {
+      b.textContent = "KEMBALI";
+      b.classList.remove("btn-danger-armed");
+    }
+  }
   function closeMatchUI(quiet) {
     sfx.click();
     stopTimer();
+    resetMatchBackBtn();
     var isOnline = (match && match.online) || (showdown && showdown.mode === "online");
     if (isOnline && !quiet && window.AFOnline) { onlineLeaving = true; AFOnline.leave(); }
     match = null;
@@ -631,7 +676,15 @@
   }
   $("backBtn").addEventListener("click", function () { closeMatchUI(); });
   $("matchBackBtn").addEventListener("click", function () {
-    if (match && !match.over && !confirm("Keluar dari match yang sedang berjalan?")) return;
+    var b = $("matchBackBtn");
+    if (match && !match.over && !b.classList.contains("btn-danger-armed")) {
+      sfx.click();
+      b.textContent = "TAP LAGI UNTUK KELUAR";
+      b.classList.add("btn-danger-armed");
+      clearTimeout(matchBackArmTimer);
+      matchBackArmTimer = setTimeout(resetMatchBackBtn, 3000);
+      return;
+    }
     closeMatchUI();
   });
   $("botBtn").addEventListener("click", function () { startMatch("bot"); });
