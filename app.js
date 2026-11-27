@@ -45,7 +45,7 @@
     return {
       cash: 200, wins: 0, battles: 0, soundOn: true,
       music: { on: true, track: "overtaken", vol: 25, url: "" },
-      bg: { preset: "malam", url: "" }
+      bg: { preset: "jojo", url: "" }
     };
   }
   function loadSave() {
@@ -981,6 +981,12 @@
     { id: "yousee", label: "YouSeeBIGGIRL/T:T", sub: "Attack on Titan", src: "audio/bgm-yousee.mp3", gain: 0.4 }
   ];
   var BG_PRESETS = [
+    // v4.7: artwork anime asli (bukan gradien) — JoJo Duel default (gambar
+    // kiriman Rafly, fan art Pixiv 369216) + 3 art resmi Kitsu terverifikasi.
+    { id: "jojo", label: "JoJo Duel", img: "images/bg-jojo.jpg", pos: "center 35%" },
+    { id: "gojo", label: "Gojo", img: "images/bg-gojo.jpg", pos: "center 30%" },
+    { id: "goku", label: "Goku", img: "images/bg-goku.jpg", pos: "center 20%" },
+    { id: "tanjiro", label: "Tanjiro", img: "images/bg-tanjiro.jpg", pos: "center 20%" },
     { id: "malam", label: "Arena Malam", css: "radial-gradient(circle at 50% 0%, #1d2038 0%, #0d0e17 65%)" },
     { id: "sakura", label: "Sakura Senja", css: "linear-gradient(160deg, #3b1d3a 0%, #7a2e4d 45%, #1c1030 100%)" },
     { id: "cyber", label: "Cyber Tokyo", css: "linear-gradient(160deg, #0a2a3a 0%, #123a6b 50%, #0d0e17 100%)" },
@@ -1114,42 +1120,55 @@
     var preset = null;
     for (var i = 0; i < BG_PRESETS.length; i++) if (BG_PRESETS[i].id === save.bg.preset) preset = BG_PRESETS[i];
     if (!preset) preset = BG_PRESETS[0];
+    var isArt = false; // v4.7: scrim/blur hanya untuk background gambar
     layer.style.backgroundImage = "";
     layer.style.backgroundSize = "";
     layer.style.backgroundPosition = "";
     layer.style.backgroundRepeat = "";
+    layer.style.background = "";
     if (save.bg.preset === "custom") {
       var u = bgCustomBlobUrl || save.bg.url;
       if (u) {
         layer.style.backgroundImage = 'url("' + u.replace(/"/g, "") + '")';
         layer.style.backgroundSize = "cover";
         layer.style.backgroundPosition = "center";
+        isArt = true;
       }
-      return;
-    }
-    if (preset.collage) {
-      var urls = collageUrls();
-      if (!urls.length) { layer.style.background = BG_PRESETS[0].css; return; }
-      var pos = ["0% 0%", "50% 0%", "100% 0%", "0% 100%", "50% 100%", "100% 100%"];
-      layer.style.backgroundImage = urls.slice(0, 6).map(function (x) { return 'url("' + x + '")'; }).join(", ");
-      layer.style.backgroundSize = "33.4% 50%";
-      layer.style.backgroundPosition = pos.slice(0, urls.length).join(", ");
+    } else if (preset.img) {
+      layer.style.backgroundImage = 'url("' + preset.img + '")';
+      layer.style.backgroundSize = "cover";
+      layer.style.backgroundPosition = preset.pos || "center";
       layer.style.backgroundRepeat = "no-repeat";
-      return;
+      isArt = true;
+    } else if (preset.collage) {
+      var urls = collageUrls();
+      if (!urls.length) { layer.style.background = "radial-gradient(circle at 50% 0%, #1d2038 0%, #0d0e17 65%)"; }
+      else {
+        var pos = ["0% 0%", "50% 0%", "100% 0%", "0% 100%", "50% 100%", "100% 100%"];
+        layer.style.backgroundImage = urls.slice(0, 6).map(function (x) { return 'url("' + x + '")'; }).join(", ");
+        layer.style.backgroundSize = "33.4% 50%";
+        layer.style.backgroundPosition = pos.slice(0, urls.length).join(", ");
+        layer.style.backgroundRepeat = "no-repeat";
+        isArt = true;
+      }
+    } else {
+      layer.style.background = preset.css;
     }
-    layer.style.background = preset.css;
+    if (layer.classList && layer.classList.toggle) layer.classList.toggle("is-art", isArt); // guard: stub sim tanpa classList
   }
   function renderBgUI() {
     var st = $("bgStatus");
-    var label = "Arena Malam";
-    if (save.bg.preset === "custom") label = bgCustomBlobUrl ? "Gambar upload lo" : (save.bg.url ? "Gambar dari URL" : "Arena Malam");
+    var label = "JoJo Duel";
+    if (save.bg.preset === "custom") label = bgCustomBlobUrl ? "Gambar upload lo" : (save.bg.url ? "Gambar dari URL" : "JoJo Duel");
     else for (var i = 0; i < BG_PRESETS.length; i++) if (BG_PRESETS[i].id === save.bg.preset) label = BG_PRESETS[i].label;
     if (st) st.textContent = label;
     var box = $("bgSwatches"); if (!box) return;
     var html = "";
     for (var j = 0; j < BG_PRESETS.length; j++) {
       var p = BG_PRESETS[j];
-      var style = p.collage
+      var style = p.img
+        ? 'background-image:url("' + p.img + '")'
+        : p.collage
         ? "background:linear-gradient(135deg,#3b82f6 0%,#aa50ff 33%,#ff2d78 66%,#ffb400 100%)"
         : "background:" + p.css;
       html += '<button class="bg-swatch' + (save.bg.preset === p.id ? " active" : "") + '" data-bg="' + p.id + '" style="' + style + '"><span>' + esc(p.label) + '</span></button>';
