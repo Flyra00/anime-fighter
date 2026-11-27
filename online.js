@@ -54,7 +54,9 @@
   // jalan — Online.destroy() sendiri mengosongkan roomCode, jadi tanpa ini
   // tombol COBA LAGI tidak akan berbuat apa-apa.
   function failJoinTimeout(peer) {
-    if (Online.peer !== peer) return; // join baru sudah jalan — abaikan timer basi
+    // v4.3 (Neon): + guard Online.connected — kalau entah bagaimana sudah
+    // terhubung, timer basi tidak boleh emit error timeout.
+    if (Online.peer !== peer || Online.connected) return; // join baru sudah jalan — abaikan timer basi
     var code = Online.roomCode;
     var name = Online.myName;
     clearJoinTimers();
@@ -128,6 +130,7 @@
     });
     conn.on("error", function (err) {
       if (Online.conn !== conn) return;
+      clearJoinTimers(); // v4.3 (Neon): error conn juga matikan timer — jangan dobel emit
       emit({ type: "error", message: "Koneksi ke lawan error." });
     });
   }

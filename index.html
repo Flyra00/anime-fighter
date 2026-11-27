@@ -27,22 +27,26 @@
   <section id="tab-main" class="tabpage active">
     <div class="panel">
       <h2>CARA MAIN</h2>
-      <p class="hint">1. Buka tab BATTLE, tap SHOWDOWN VS BOT atau DUEL TEMAN.<br>
-      2. Tiap ronde, lo dan lawan gacha 1 karakter — ditampilin berdua kayak VS, live kayak di Roblox.<br>
-      3. Lo pilih sendiri karakter lo masuk slot mana: Kekuatan, Kecepatan, Kemampuan, Kepintaran, atau Ketahanan. Satu karakter cuma bisa isi satu slot. Lawan juga masang karakternya di saat yang sama — keliatan live di panel lawan.<br>
-      4. Stat angka (STR, SPD, ABI, IQ, DUR) tampil di kartu dan tiap slot selama match — pakai angkanya buat milih slot terbaik!<br>
-      5. Tiap ronde ada timer acak 11–20 detik — kalau habis, karakter otomatis masuk slot acak yang masih kosong.<br>
-      6. Reroll sepasang karakter ronde itu: 100 Cash. Menang battle: +100 Cash, +1 Win. Kalah: +15 Cash. Seri: +50 Cash.<br>
-      7. Setelah 5 ronde, SHOWDOWN: rata-rata 5 stat diadu, tertinggi menang (atau terendah di mode Reverse).<br>
-      8. 1VS1 ONLINE (beda device): di tab BATTLE tap 1VS1 ONLINE — host BUAT ROOM terus share kode/link ke teman, teman GABUNG ROOM pakai kode itu. Main di HP masing-masing, 5 ronde kayak biasa.</p>
+      <ol class="rules-list">
+        <li>Buka tab BATTLE, tap SHOWDOWN VS BOT atau DUEL TEMAN.</li>
+        <li>Tiap ronde, lo dan lawan gacha 1 karakter — ditampilin berdua kayak VS, live kayak di Roblox.</li>
+        <li>Lo pilih sendiri karakter lo masuk slot mana: Kekuatan, Kecepatan, Kemampuan, Kepintaran, atau Ketahanan. Satu karakter cuma bisa isi satu slot. Lawan juga masang karakternya di saat yang sama — keliatan live di panel lawan.</li>
+        <li>Stat angka (STR, SPD, ABI, IQ, DUR) tampil di kartu dan tiap slot selama match — pakai angkanya buat milih slot terbaik!</li>
+        <li>Tiap ronde ada timer acak 11–20 detik — kalau habis, karakter otomatis masuk slot acak yang masih kosong.</li>
+        <li>Reroll sepasang karakter ronde itu: 100 Cash. Menang battle: +100 Cash, +1 Win. Kalah: +15 Cash. Seri: +50 Cash.</li>
+        <li>Setelah 5 ronde, SHOWDOWN: rata-rata 5 stat diadu, tertinggi menang (atau terendah di mode Reverse).</li>
+        <li>1VS1 ONLINE (beda device): di tab BATTLE tap 1VS1 ONLINE — host BUAT ROOM terus share kode/link ke teman, teman GABUNG ROOM pakai kode itu. Main di HP masing-masing, 5 ronde kayak biasa.</li>
+      </ol>
     </div>
   </section>
 
   <!-- ============ TAB BATTLE (SHOWDOWN) ============ -->
   <section id="tab-battle" class="tabpage">
     <div class="panel">
-      <h2>SHOWDOWN</h2>
-      <p class="hint">Match dimulai, baru bangun fighter — tiap ronde gacha 1 karakter, lo yang pilih masuk slot mana. 5 ronde, terus SHOWDOWN adu rata-rata stat, kayak di Roblox-nya.</p>
+      <div class="battle-intro">
+        <h2>SHOWDOWN</h2>
+        <p class="hint">Match dimulai, baru bangun fighter — tiap ronde gacha 1 karakter, lo yang pilih masuk slot mana. 5 ronde, terus SHOWDOWN adu rata-rata stat, kayak di Roblox-nya.</p>
+      </div>
       <div id="battleMenu" class="battle-menu">
         <label class="mode-label" for="battleMode">Mode:</label>
         <select id="battleMode">
@@ -57,13 +61,17 @@
       <div id="roomPanel" class="room-panel hidden">
         <h3>1VS1 ONLINE</h3>
         <input id="playerNameInput" type="text" placeholder="Nama lo (boleh kosong)" maxlength="16">
+        <button id="createRoomBtn" class="btn btn-red btn-big">BUAT ROOM BARU</button>
+        <div class="room-divider"><span>ATAU GABUNG ROOM TEMAN</span></div>
         <div class="room-row">
-          <button id="createRoomBtn" class="btn btn-red">BUAT ROOM</button>
-          <input id="roomCodeInput" type="text" placeholder="Kode room" maxlength="6">
+          <input id="roomCodeInput" type="text" placeholder="Kode 6 huruf" maxlength="6">
           <button id="joinRoomBtn" class="btn btn-blue">GABUNG</button>
         </div>
         <div id="roomInfo" class="room-info hidden">
-          <p class="hint">Kode room lo: <b id="roomCodeLabel"></b></p>
+          <div class="room-code-box">
+            <span class="room-code-caption">KODE ROOM LO</span>
+            <b id="roomCodeLabel"></b>
+          </div>
           <p class="room-warn">Jangan pindah aplikasi / kunci HP terlalu lama selama room dibuka.</p>
           <button id="copyLinkBtn" class="btn btn-purple">SALIN LINK INVITE</button>
         </div>

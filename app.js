@@ -1,6 +1,7 @@
-// Anime Fighter (web) v4.2 — ala Build An Anime Character.
+// Anime Fighter (web) v4.3 — ala Build An Anime Character.
 // Match lokal (bot/duel 1 layar): 5 ronde, gacha sepasang, pasang sendiri,
 // v4.2: join timeout (12 dtk peer open + 10 dtk conn open) + error case tampilkan COBA LAGI.
+// v4.3: UI polish Neon HIGH (topbar/tabs/kartu/HUD/room/SHOWDOWN) + reorder joinRoomBtn + guard timeout.
 // stat DITAMPILIN selama match (chip di kartu + nilai per slot), timer acak
 // 11-20 dtk, reroll sepasang 100 Cash. Gambar kartu object-fit contain
 // (utuh, tidak kepotong). Battle menu disembunyiin saat match aktif.
@@ -886,7 +887,8 @@
           sfx.error();
           $("roomStatus").className = "hint status-warn";
           $("roomStatus").textContent = ev.message || "Terjadi error koneksi.";
-          if (!AFOnline.isHost) $("retryJoinBtn").classList.remove("hidden");
+          // v4.3 (Neon): COBA LAGI cuma kalau ada kode room yang bisa di-retry.
+          if (!AFOnline.isHost && AFOnline.roomCode) $("retryJoinBtn").classList.remove("hidden");
           toast(ev.message || "Terjadi error koneksi.");
           break;
         case "left":
@@ -916,8 +918,10 @@
     if (!code) { sfx.error(); toast("Masukin kode room dulu."); return; }
     $("retryJoinBtn").classList.add("hidden");
     $("roomStatus").className = "hint";
-    if (window.AFOnline) AFOnline.joinRoom(code, name);
+    // v4.3 (Neon): status DULU baru joinRoom — kalau joinRoom emit error
+    // sinkron (mis. kode < 4 huruf), pesannya tidak ketimpa "Join room ...".
     $("roomStatus").textContent = "Join room " + code.toUpperCase() + "...";
+    if (window.AFOnline) AFOnline.joinRoom(code, name);
   });
   $("retryJoinBtn").addEventListener("click", function () {
     sfx.click();
