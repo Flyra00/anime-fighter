@@ -52,9 +52,11 @@
   // default — kalau tidak ditulis, TURN bawaan hilang diam-diam (koreksi
   // 27 Nov: klaim "PeerJS tanpa TURN" SALAH; bundle 1.5.4 membuktikan ada
   // turn:eu-0 + us-0.turn.peerjs.com:3478, peerjs/peerjsp).
-  // TURN tambahan = OpenRelay (Metered, publik, tanpa signup, 20 GB/bln)
-  // — UDP + TCP + TLS di port 80/443, karena browser cloud sering
-  // memblokir UDP dan port 3478.
+  // v4.5: OpenRelay DIHAPUS dari daftar — halaman resmi Metered saat ini
+  // (dicek 27 Nov) sudah tidak lagi mendokumentasikan kredensial bersama
+  // openrelayproject/openrelayproject; TURN OpenRelay sekarang butuh
+  // signup akun gratis + REST API untuk fetch iceServers. URL mati cuma
+  // memperlambat gathering (Neon) dan bisa bikin timer 10 dtk fire duluan.
   function peerOptions() {
     return {
       debug: 0,
@@ -62,12 +64,7 @@
         iceServers: [
           { urls: "stun:stun.l.google.com:19302" },
           { urls: "stun:stun1.l.google.com:19302" },
-          { urls: ["turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478"], username: "peerjs", credential: "peerjsp" },
-          { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
-          { urls: "turn:openrelay.metered.ca:80?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
-          { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
-          { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
-          { urls: "turns:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" }
+          { urls: ["turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478"], username: "peerjs", credential: "peerjsp" }
         ]
       }
     };
@@ -80,6 +77,51 @@
     connTimer = null;
   }
 
+  // v4.5 — diagnostik ICE (Neon): catat kandidat + state saat join gagal
+  // tahap-2, supaya kegagalan berikutnya ketahuan TURN-nya nyampe apa nggak.
+  // Ringkasan: [ICE:<iceConnectionState> g:<iceGatheringState> h:<host>
+  // s:<srflx> r:<relay> err:<kode>] — err cuma muncul kalau ada error
+  // (701 = server STUN/TURN tidak terjangkau, 401 = kredensial ditolak).
+  // attached = false kalau tidak ada peerConnection asli (mis. FakePeer
+  // di sim) — ringkasan kosong, pesan error tidak berubah.
+  var iceDiag = null;
+  function resetIceDiag() {
+    iceDiag = { attached: false, ice: "none", g: "new", h: 0, s: 0, r: 0, err: 0 };
+  }
+  function iceSummary() {
+    if (!iceDiag || !iceDiag.attached) return "";
+    var s = " [ICE:" + iceDiag.ice + " g:" + iceDiag.g + " h:" + iceDiag.h + " s:" + iceDiag.s + " r:" + iceDiag.r;
+    if (iceDiag.err) s += " err:" + iceDiag.err;
+    return s + "]";
+  }
+  function attachIceDiag(conn) {
+    resetIceDiag();
+    try {
+      var pc = conn && conn.peerConnection;
+      if (!pc || typeof pc.addEventListener !== "function") return;
+      var d = iceDiag; // tangkap objek conn ini — listener conn lama tidak boleh mengotori diag join baru
+      d.attached = true;
+      pc.addEventListener("icecandidate", function (e) {
+        if (!e.candidate) return;
+        var c = e.candidate.candidate || "";
+        if (c.indexOf("typ host") !== -1) d.h++;
+        else if (c.indexOf("typ srflx") !== -1) d.s++;
+        else if (c.indexOf("typ relay") !== -1) d.r++;
+      });
+      pc.addEventListener("icecandidateerror", function (e) {
+        if (e.errorCode) d.err = e.errorCode;
+      });
+      pc.addEventListener("iceconnectionstatechange", function () {
+        d.ice = pc.iceConnectionState || d.ice;
+      });
+      pc.addEventListener("icegatheringstatechange", function () {
+        d.g = pc.iceGatheringState || d.g;
+      });
+      d.ice = pc.iceConnectionState || "new";
+      d.g = pc.iceGatheringState || "new";
+    } catch (e) { /* diagnostik jangan matikan koneksi */ }
+  }
+
   // Dipanggil saat join gagal karena timeout: bersihkan peer yang menggantung,
   // tapi PERTAHANKAN roomCode + myName supaya COBA LAGI (retryJoin) tetap bisa
   // jalan — Online.destroy() sendiri mengosongkan roomCode, jadi tanpa ini
@@ -90,11 +132,12 @@
     if (Online.peer !== peer || Online.connected) return; // join baru sudah jalan — abaikan timer basi
     var code = Online.roomCode;
     var name = Online.myName;
+    var diag = iceSummary(); // v4.5: tangkap SEBELUM destroy() — destroy() me-reset iceDiag
     clearJoinTimers();
     Online.destroy();
     Online.roomCode = code;
     Online.myName = name;
-    emit({ type: "error", message: msg || JOIN_STAGE2_MSG });
+    emit({ type: "error", message: (msg || JOIN_STAGE2_MSG) + diag });
   }
 
   // Daftar ulang ke signaling server dengan ID yang sama (af-XXXXXX) kalau
@@ -142,6 +185,7 @@
 
   function wireConn(conn) {
     Online.conn = conn;
+    attachIceDiag(conn); // v4.5: mulai catat kandidat ICE untuk conn ini
     conn.on("open", function () {
       if (Online.conn !== conn) return; // conn lama yang telat — abaikan
       clearJoinTimers(); // join berhasil — matikan kedua timer tahap-1/2
@@ -274,6 +318,7 @@
   Online.destroy = function () {
     clearTimeout(reconnectTimer);
     clearJoinTimers();
+    iceDiag = null; // v4.5: reset diagnostik — join baru mulai dari nol
     Online.reconnecting = false;
     // Null-kan dulu SEBELUM close/destroy: close conn lama itu async, dan
     // handler "close"-nya harus diabaikan kalau join baru sudah jalan.

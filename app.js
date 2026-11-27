@@ -1,8 +1,9 @@
-// Anime Fighter (web) v4.4 — ala Build An Anime Character.
+// Anime Fighter (web) v4.5 — ala Build An Anime Character.
 // Match lokal (bot/duel 1 layar): 5 ronde, gacha sepasang, pasang sendiri,
 // v4.2: join timeout (12 dtk peer open + 10 dtk conn open) + error case tampilkan COBA LAGI.
 // v4.3: UI polish Neon HIGH (topbar/tabs/kartu/HUD/room/SHOWDOWN) + reorder joinRoomBtn + guard timeout.
 // v4.4: TURN test (OpenRelay) + pesan timeout dibedakan tahap-1/tahap-2 (online.js peerOptions()).
+// v4.5: diagnostik ICE (iceDiag: kandidat host/srflx/relay + err) + OpenRelay dihapus (kredensial bersama sudah tidak didokumentasikan Metered).
 // stat DITAMPILIN selama match (chip di kartu + nilai per slot), timer acak
 // 11-20 dtk, reroll sepasang 100 Cash. Gambar kartu object-fit contain
 // (utuh, tidak kepotong). Battle menu disembunyiin saat match aktif.
