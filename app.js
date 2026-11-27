@@ -1,10 +1,10 @@
-// Anime Fighter (web) v3.1 — ala Build An Anime Character.
-// Match: 5 ronde. Tiap ronde, lo + lawan gacha SEPASANG karakter (ditampilin
-// VS, live kayak di Roblox), pemain pilih SENDIRI karakternya masuk slot mana.
-// Stat angka DISEMBUNYIIN selama match (cuma keliatan di galeri) — pasang
-// pakai feeling + pengetahuan soal karakternya. Lawan keliatan live: roll-nya
-// tampil di VS pair, pasangannya keliatan di panel lawan saat lock-in bareng.
-// Timer ACAK 11-20 dtk/ronde (kayak Roblox), reroll sepasang 100 Cash.
+// Anime Fighter (web) v4 — ala Build An Anime Character.
+// Match lokal (bot/duel 1 layar): 5 ronde, gacha sepasang, pasang sendiri,
+// stat disembunyiin selama match, timer acak 11-20 dtk, reroll sepasang 100 Cash.
+// ONLINE 1v1 (PeerJS P2P): host buat room (kode 6 huruf), teman join pakai
+// kode/link. Host = wasit: gacha sepasang tiap ronde, pegang timer (endsAt),
+// auto-place buat yang belum pasang. Tamu tidak auto-place sendiri — state
+// ronde selalu datang dari host (pesan `round` bawa parts kedua sisi).
 // SHOWDOWN: adu AVG SCORE 5 stat (reveal di sini). Save di localStorage.
 (function () {
   "use strict";
@@ -28,7 +28,8 @@
 
   var save = loadSave();
   var soundOn = save.soundOn !== false;
-  var match = null;     // match aktif: {mode, reverse, round, turn, a, b, pair, roll, timeLeft, timerId, over}
+  var match = null;     // match aktif: {mode, reverse, round, turn, a, b, pair, roll, timeLeft, timerId, over,
+                          //   online, mySide, oppSide, myPlaced, oppPlaced, endsAt, startedAt}
   var showdown = null;  // state showdown aktif
 
   // ---------------- SAVE ----------------
@@ -214,14 +215,19 @@
       reverse: $("battleMode").value === "reverse",
       round: 1, turn: "a",
       a: emptyParts(), b: emptyParts(),
-      pair: { a: null, b: null }, roll: null, timeLeft: ROUND_TIME_MAX, timerId: null, over: false
+      pair: { a: null, b: null }, roll: null, timeLeft: ROUND_TIME_MAX, timerId: null, over: false,
+      online: mode === "online",
+      mySide: (mode === "online" && window.AFOnline) ? (AFOnline.isHost ? "a" : "b") : "a",
+      oppSide: (mode === "online" && window.AFOnline) ? (AFOnline.isHost ? "b" : "a") : "b",
+      myPlaced: false, oppPlaced: false, endsAt: 0, startedAt: Date.now()
     };
     save.battles++; persist();
     showdown = null;
     $("arena").classList.add("hidden");
     $("matchPanel").classList.remove("hidden");
-    $("matchTitle").textContent = mode === "bot" ? "SHOWDOWN VS BOT" : "DUEL TEMAN (1 LAYAR)";
+    $("matchTitle").textContent = mode === "bot" ? "SHOWDOWN VS BOT" : (mode === "duel" ? "DUEL TEMAN (1 LAYAR)" : "1VS1 ONLINE");
     renderBadges();
+    if (mode === "online") return; // ronde pertama datang dari host (pesan round)
     beginRound();
   }
   function beginRound() {
@@ -244,7 +250,10 @@
   function beginTurn(side) {
     match.turn = side;
     match.roll = match.pair[side];
-    match.timeLeft = ROUND_TIME_MIN + Math.floor(Math.random() * (ROUND_TIME_MAX - ROUND_TIME_MIN + 1));
+    // Online: timer ikut endsAt dari host. Lokal: acak 11-20 dtk.
+    match.timeLeft = match.online
+      ? Math.max(0, Math.ceil((match.endsAt - Date.now()) / 1000))
+      : ROUND_TIME_MIN + Math.floor(Math.random() * (ROUND_TIME_MAX - ROUND_TIME_MIN + 1));
     renderMatch();
     startTimer();
   }
@@ -252,11 +261,18 @@
     stopTimer();
     match.timerId = setInterval(function () {
       if (!match || match.over) { stopTimer(); return; }
-      match.timeLeft--;
+      if (match.online) {
+        match.timeLeft = Math.max(0, Math.ceil((match.endsAt - Date.now()) / 1000));
+      } else {
+        match.timeLeft--;
+      }
       var t = $("timerLabel");
       t.textContent = "Waktu: " + match.timeLeft + " dtk";
       if (match.timeLeft <= 5) t.classList.add("timer-danger"); else t.classList.remove("timer-danger");
-      if (match.timeLeft <= 0) autoPlace();
+      if (match.timeLeft <= 0) {
+        if (match.online) onlineTimeout();
+        else autoPlace();
+      }
     }, 1000);
   }
   function stopTimer() {
@@ -275,16 +291,28 @@
   }
   function placeRoll(key) {
     if (!match || match.over || !match.roll) return;
-    var parts = activeParts();
+    if (match.online && match.myPlaced) { toast("Kamu sudah pasang ronde ini — menunggu lawan."); return; }
+    var parts = match.online ? onlineMyParts() : activeParts();
     if (parts[key]) { toast("Slot " + slotLabel(key) + " udah terisi. Pilih slot kosong."); return; }
     parts[key] = match.roll.id;
     sfx.pop();
     toast(match.roll.name + " masuk slot " + slotLabel(key) + ".");
+    if (match.online) {
+      match.myPlaced = true;
+      AFOnline.send({ t: "place", round: match.round, slot: key, charId: match.roll.id });
+    }
     afterPlace();
   }
   function afterPlace() {
-    stopTimer();
     if (!match) return;
+    if (match.online) {
+      // Online: ronde tidak berakhir pas lo pasang — nunggu lawan juga pasang
+      // (atau timer habis, host yang majuin). Host lanjut kalau sudah lengkap.
+      if (onlineIsHost()) onlineAdvanceIfReady();
+      renderMatch();
+      return;
+    }
+    stopTimer();
     if (match.mode === "bot") {
       lockOpponent(); // lawan lock-in bareng
       if (filledCount(match.a) === 5) { finishMatch(); return; }
@@ -300,6 +328,36 @@
   }
   function rerollCurrent() {
     if (!match || match.over || !match.pair.a || !match.pair.b) return;
+    if (match.online) {
+      // Reroll cuma bisa sebelum ada yang pasang ronde ini.
+      if (match.myPlaced || match.oppPlaced) { toast("Reroll cuma bisa sebelum ada yang pasang ronde ini."); return; }
+      if (save.cash < REROLL_COST) { toast("Cash tidak cukup buat reroll (100 Cash)! Menang battle dulu."); return; }
+      if (onlineIsHost()) {
+        save.cash -= REROLL_COST;
+        persist();
+        var pa = rollUnique(match.a, []);
+        var pb = rollUnique(match.b, [pa.id]);
+        match.pair = { a: pa, b: pb };
+        AFOnline.send({ t: "round", n: match.round, pair: { a: pa.id, b: pb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
+        match.roll = match.pair[match.mySide];
+        renderBadges();
+        renderMatch();
+        toast("Reroll: " + match.roll.name + " [" + match.roll.rarity + "] — " + match.roll.move + "!");
+      } else {
+        match.rerollPending = true;
+        AFOnline.send({ t: "reroll" });
+        renderMatch();
+        toast("Minta reroll ke host...");
+        setTimeout(function () {
+          if (match && match.rerollPending) {
+            match.rerollPending = false;
+            toast("Reroll tidak dijawab host — coba lagi.");
+            renderMatch();
+          }
+        }, 3000);
+      }
+      return;
+    }
     if (save.cash < REROLL_COST) { toast("Cash tidak cukup buat reroll (100 Cash)! Menang battle dulu."); return; }
     save.cash -= REROLL_COST;
     // Reroll = sepasang baru (kayak di Roblox): dua-duanya ganti.
@@ -317,8 +375,17 @@
   // Panel lawan (LIVE): 5 slot lawan terisi satu per satu tiap ronde,
   // keliatan karakternya — tanpa angka stat (disembunyiin selama match).
   function renderOppPanel() {
-    var oppParts = match.mode === "bot" ? match.b : (match.turn === "a" ? match.b : match.a);
-    var oppName = match.mode === "bot" ? "BOT" : "TEMAN";
+    var oppParts, oppName;
+    if (match.online) {
+      oppParts = onlineOppParts();
+      oppName = (window.AFOnline && AFOnline.oppName) || "LAWAN";
+    } else if (match.mode === "bot") {
+      oppParts = match.b;
+      oppName = "BOT";
+    } else {
+      oppParts = match.turn === "a" ? match.b : match.a;
+      oppName = "TEMAN";
+    }
     $("oppTitle").textContent = "LAWAN (" + oppName + ") — LIVE";
     var html = "";
     SLOT_DEFS.forEach(function (d) {
@@ -333,32 +400,55 @@
   }
   function renderMatch() {
     if (!match) return;
+    if (!match.roll) {
+      // Online: menunggu ronde pertama dari host.
+      $("roundLabel").textContent = "RONDE " + match.round + "/5";
+      $("turnLabel").textContent = "Menunggu host mulai match...";
+      $("rollCard").innerHTML = "";
+      $("matchSlots").innerHTML = "";
+      renderOppPanel();
+      return;
+    }
     $("roundLabel").textContent = "RONDE " + match.round + "/5";
     var t = $("timerLabel");
     t.textContent = "Waktu: " + match.timeLeft + " dtk";
     if (match.timeLeft <= 5) t.classList.add("timer-danger"); else t.classList.remove("timer-danger");
-    var who = match.mode === "bot" ? "" : (match.turn === "a" ? "GILIRAN LO — " : "GILIRAN TEMAN — ");
-    $("turnLabel").textContent = who + "pilih slot buat " + match.roll.name + "!";
+    var who;
+    if (match.online) {
+      who = match.myPlaced ? "Kamu sudah pasang — menunggu lawan..." : "pilih slot buat " + match.roll.name + "!";
+    } else {
+      who = match.mode === "bot" ? "" : (match.turn === "a" ? "GILIRAN LO — " : "GILIRAN TEMAN — ");
+      who += "pilih slot buat " + match.roll.name + "!";
+    }
+    $("turnLabel").textContent = who;
     renderOppPanel();
     // VS pair: roll lo vs roll lawan, live. Tanpa angka stat (class no-stats).
-    var myLabel = match.mode === "bot" ? "LO" : (match.turn === "a" ? "LO" : "TEMAN");
-    var oppLabel = match.mode === "bot" ? "BOT" : (match.turn === "a" ? "TEMAN" : "LO");
-    var myChar = match.pair[match.turn];
-    var oppChar = match.pair[match.turn === "a" ? "b" : "a"];
+    var myLabel, oppLabel;
+    if (match.online) {
+      myLabel = (window.AFOnline && AFOnline.myName) || "LO";
+      oppLabel = (window.AFOnline && AFOnline.oppName) || "LAWAN";
+    } else {
+      myLabel = match.mode === "bot" ? "LO" : (match.turn === "a" ? "LO" : "TEMAN");
+      oppLabel = match.mode === "bot" ? "BOT" : (match.turn === "a" ? "TEMAN" : "LO");
+    }
+    var myChar = match.online ? match.pair[match.mySide] : match.pair[match.turn];
+    var oppChar = match.online ? match.pair[match.oppSide] : match.pair[match.turn === "a" ? "b" : "a"];
     $("rollCard").innerHTML = '<div class="vs-pair no-stats">' +
-      '<div class="vs-side"><div class="vs-side-label">' + myLabel + '</div>' + cardHtml(myChar, false) + "</div>" +
+      '<div class="vs-side"><div class="vs-side-label">' + esc(myLabel) + '</div>' + cardHtml(myChar, false) + "</div>" +
       '<div class="vs-mid">VS</div>' +
-      '<div class="vs-side"><div class="vs-side-label">' + oppLabel + '</div>' + cardHtml(oppChar, false) + "</div>" +
+      '<div class="vs-side"><div class="vs-side-label">' + esc(oppLabel) + '</div>' + cardHtml(oppChar, false) + "</div>" +
       "</div>";
     var rb = $("rerollBtn");
     rb.textContent = "REROLL (100 CASH)";
-    rb.disabled = save.cash < REROLL_COST;
-    var parts = activeParts();
+    // Online: reroll mati kalau sudah ada yang pasang ronde ini / lagi nunggu jawaban host.
+    rb.disabled = save.cash < REROLL_COST ||
+      (match.online && (match.myPlaced || match.oppPlaced || match.rerollPending));
+    var parts = match.online ? onlineMyParts() : activeParts();
     var html = "";
     SLOT_DEFS.forEach(function (d) {
       var id = parts[d.key];
       var c = id ? charById(id) : null;
-      html += '<button class="build-slot match-slot" data-slot="' + d.key + '"' + (c ? " disabled" : "") + ">";
+      html += '<button class="build-slot match-slot" data-slot="' + d.key + '"' + ((c || (match.online && match.myPlaced)) ? " disabled" : "") + ">";
       if (c) {
         // Tanpa angka stat selama match — cuma nama + jurus.
         html += imgHtml(c) +
@@ -381,19 +471,24 @@
       });
     });
   }
-  function finishMatch() {
+  function finishMatch(partsA, partsB) {
     if (!match) return;
     match.over = true;
     stopTimer();
-    var a = match.a, b = match.b, mode = match.mode, rev = match.reverse;
+    var a = partsA || match.a, b = partsB || match.b, mode = match.mode, rev = match.reverse;
+    var mySide = match.mySide || "a";
     match = null;
     $("matchPanel").classList.add("hidden");
-    startShowdown(a, b, mode, rev);
+    startShowdown(a, b, mode, rev, mySide);
   }
 
   // ---------------- SHOWDOWN (adu AVG score, ala BAAC) ----------------
-  function startShowdown(aParts, bParts, mode, reverse) {
-    showdown = { a: aParts, b: bParts, mode: mode, reverse: reverse, revealed: false, over: false };
+  function startShowdown(aParts, bParts, mode, reverse, mySide) {
+    // "A" = fighter LOKAL (tamu online = sisi b, jadi ditukar supaya kiri
+    // selalu fighter lo dan kanan selalu lawan — menang/kalah tidak kebalik).
+    var local = mySide === "b" ? bParts : aParts;
+    var opp = mySide === "b" ? aParts : bParts;
+    showdown = { a: local, b: opp, mode: mode, reverse: reverse, revealed: false, over: false };
     $("arena").classList.remove("hidden");
     $("showdownResult").innerHTML = "";
     $("showdownBtn").textContent = "SHOWDOWN!";
@@ -440,31 +535,36 @@
     var msg;
     if (winner === "draw") {
       msg = "SERI! AVG sama-sama " + a.avg.toFixed(1) + ". +50 Cash.";
-      if (showdown.mode === "bot") save.cash += DRAW_REWARD;
+      if (showdown.mode === "bot" || showdown.mode === "online") save.cash += DRAW_REWARD;
       sfx.coin();
     } else if (winner === "A") {
       msg = "MENANG! " + a.avg.toFixed(1) + " vs " + b.avg.toFixed(1) + ". +100 Cash, +1 Win!";
-      if (showdown.mode === "bot") { save.cash += WIN_REWARD; save.wins++; }
+      if (showdown.mode === "bot" || showdown.mode === "online") { save.cash += WIN_REWARD; save.wins++; }
       sfx.win(); sfx.coin();
     } else {
       msg = "KALAH. " + a.avg.toFixed(1) + " vs " + b.avg.toFixed(1) + ". +15 Cash.";
-      if (showdown.mode === "bot") save.cash += LOSE_REWARD;
+      if (showdown.mode === "bot" || showdown.mode === "online") save.cash += LOSE_REWARD;
       sfx.coin();
     }
     persist();
-    $("showdownResult").innerHTML = '<div class="sd-result">' + esc(msg) + '</div>' +
-      (showdown.mode === "bot" ? '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (BOT BARU)</button>' : "");
+    var rematchHtml = "";
+    if (showdown.mode === "bot") rematchHtml = '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (BOT BARU)</button>';
+    else if (showdown.mode === "online") rematchHtml = '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (ONLINE)</button>';
+    $("showdownResult").innerHTML = '<div class="sd-result">' + esc(msg) + '</div>' + rematchHtml;
     $("showdownBtn").classList.add("hidden");
     var rb = $("rematchBtn");
     if (rb) rb.addEventListener("click", function () {
       sfx.click();
-      startMatch("bot");
+      rb.disabled = true;
+      if (showdown.mode === "online") onlineRematch();
+      else startMatch("bot");
     });
     renderBadges();
   });
-  function closeMatchUI() {
+  function closeMatchUI(quiet) {
     sfx.click();
     stopTimer();
+    if (match && match.online && !quiet && window.AFOnline) { onlineLeaving = true; AFOnline.leave(); }
     match = null;
     showdown = null;
     $("arena").classList.add("hidden");
@@ -496,7 +596,293 @@
     if (soundOn) sfx.click();
   });
 
+  // ---------------- ONLINE 1v1 (PeerJS) ----------------
+  var onlineLeaving = false; // true kalau KITA yang keluar (bukan lawan)
+  function onlineIsHost() { return match && match.online && window.AFOnline && AFOnline.isHost; }
+  function onlineMyParts() { return match[match.mySide]; }
+  function onlineOppParts() { return match[match.oppSide]; }
+  function randomEmptySlot(parts) {
+    var empty = SLOT_DEFS.filter(function (d) { return !parts[d.key]; });
+    if (!empty.length) return null;
+    return empty[Math.floor(Math.random() * empty.length)].key;
+  }
+
+  // Host: mulai ronde (roll sepasang, kirim pesan round, terapkan lokal).
+  function onlineBeginRound() {
+    if (!match || match.over) return;
+    if (match.round > 5) { onlineFinishLocal(); return; }
+    var pa = rollUnique(match.a, []);
+    var pb = rollUnique(match.b, [pa.id]);
+    match.pair = { a: pa, b: pb };
+    match.endsAt = Date.now() + (ROUND_TIME_MIN + Math.floor(Math.random() * (ROUND_TIME_MAX - ROUND_TIME_MIN + 1))) * 1000;
+    match.myPlaced = false;
+    match.oppPlaced = false;
+    AFOnline.send({ t: "round", n: match.round, pair: { a: pa.id, b: pb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
+    beginTurn(match.mySide);
+  }
+
+  // Terapkan pesan round dari host (ronde baru maupun reroll).
+  function onlineApplyRound(msg) {
+    if (!match) startMatch("online"); // rejoin tengah match
+    if (!match || match.over) return;
+    if (msg.n !== match.round && msg.n !== match.round + 1) return; // ronde basi
+    var oldPairA = match.pair.a ? match.pair.a.id : null;
+    match.round = msg.n;
+    match.pair = { a: charById(msg.pair.a), b: charById(msg.pair.b) };
+    match.a = msg.a; match.b = msg.b;
+    match.endsAt = msg.endsAt;
+    match.myPlaced = false;
+    match.oppPlaced = false;
+    // Reroll tamu diterima: pair berubah -> potong 100 Cash sekali.
+    if (match.rerollPending) {
+      match.rerollPending = false;
+      if (msg.pair.a !== oldPairA) {
+        save.cash -= REROLL_COST;
+        persist();
+        renderBadges();
+        toast("Reroll: " + match.pair[match.mySide].name + "!");
+      } else {
+        toast("Reroll ditolak — sudah ada yang pasang.");
+      }
+    }
+    beginTurn(match.mySide);
+  }
+
+  // Timer habis (online). Tamu: kunci pasang, tunggu host. Host: jeda 1,5 dtk
+  // buat pesan place yang telat, lalu auto-place buat yang belum pasang.
+  function onlineTimeout() {
+    stopTimer();
+    if (!match || match.over) return;
+    if (!onlineIsHost()) { renderMatch(); return; }
+    setTimeout(function () {
+      if (!match || match.over) return;
+      if (!match.myPlaced) {
+        var key = randomEmptySlot(onlineMyParts());
+        if (key) {
+          onlineMyParts()[key] = match.roll.id;
+          match.myPlaced = true;
+          AFOnline.send({ t: "place", round: match.round, slot: key, charId: match.roll.id });
+        }
+      }
+      if (!match.oppPlaced) {
+        var oppChar = match.pair[match.oppSide];
+        var okey = randomEmptySlot(onlineOppParts());
+        if (okey && oppChar) {
+          onlineOppParts()[okey] = oppChar.id;
+          match.oppPlaced = true;
+          AFOnline.send({ t: "place", round: match.round, slot: okey, charId: oppChar.id });
+        }
+      }
+      onlineAdvanceIfReady();
+    }, 1500);
+  }
+
+  // Host: kalau kedua sisi sudah pasang, lanjut ronde berikut / finish.
+  function onlineAdvanceIfReady() {
+    if (!match || match.over) return;
+    if (!match.myPlaced || !match.oppPlaced) return;
+    if (match.round >= 5) { onlineFinishLocal(); return; }
+    match.round++;
+    onlineBeginRound();
+  }
+
+  function onlineFinishLocal() {
+    if (!match) return;
+    AFOnline.send({ t: "finish", a: match.a, b: match.b });
+    finishMatch(match.a, match.b);
+  }
+
+  function onlineRematch() {
+    if (window.AFOnline) AFOnline.send({ t: "rematch" });
+    startMatch("online");
+    if (onlineIsHost()) onlineBeginRound();
+  }
+
+  function onlineHandleMessage(msg) {
+    if (!msg || !msg.t) return;
+    switch (msg.t) {
+      case "join": // host: tamu masuk
+        if (window.AFOnline) AFOnline.oppName = msg.name || "Pemain 2";
+        var inMatch = !!(match && !match.over && match.pair && match.pair.a);
+        if (inMatch) {
+          AFOnline.send({ t: "welcome", name: AFOnline.myName, inMatch: true,
+            round: { n: match.round, pair: { a: match.pair.a.id, b: match.pair.b.id }, endsAt: match.endsAt, a: match.a, b: match.b } });
+        } else {
+          AFOnline.send({ t: "welcome", name: AFOnline.myName, inMatch: false });
+        }
+        $("roomStatus").textContent = "Lawan masuk: " + AFOnline.oppName + " — tap MULAI MATCH.";
+        $("startOnlineBtn").classList.remove("hidden");
+        toast(AFOnline.oppName + " masuk room!");
+        break;
+      case "welcome": // tamu: host jawab
+        if (window.AFOnline) AFOnline.oppName = msg.name || "Pemain 1";
+        $("roomStatus").textContent = "Terhubung dengan " + AFOnline.oppName + "! Menunggu host mulai match...";
+        if (msg.inMatch && msg.round) onlineApplyRound(msg.round);
+        break;
+      case "start": // tamu: host mulai
+        startMatch("online");
+        $("roomPanel").classList.add("hidden");
+        break;
+      case "round":
+        onlineApplyRound(msg);
+        break;
+      case "place":
+        if (!match || match.over) break;
+        if (msg.round !== match.round) break; // ronde basi
+        var oppParts = onlineOppParts();
+        if (oppParts[msg.slot]) break; // sudah terisi (auto-place host vs pesan telat)
+        oppParts[msg.slot] = msg.charId;
+        match.oppPlaced = true;
+        sfx.pop();
+        renderMatch();
+        if (onlineIsHost()) onlineAdvanceIfReady();
+        break;
+      case "reroll": // host: tamu minta reroll
+        if (!match || match.over || !onlineIsHost()) break;
+        if (match.myPlaced || match.oppPlaced) {
+          // Sudah ada yang pasang: kirim ronde sekarang (pair sama) biar tamu batal.
+          AFOnline.send({ t: "round", n: match.round, pair: { a: match.pair.a.id, b: match.pair.b.id }, endsAt: match.endsAt, a: match.a, b: match.b });
+          break;
+        }
+        var rpa = rollUnique(match.a, []);
+        var rpb = rollUnique(match.b, [rpa.id]);
+        match.pair = { a: rpa, b: rpb };
+        AFOnline.send({ t: "round", n: match.round, pair: { a: rpa.id, b: rpb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
+        match.roll = match.pair[match.mySide];
+        renderMatch();
+        break;
+      case "finish":
+        if (match) finishMatch(msg.a, msg.b);
+        break;
+      case "rematch":
+        if (showdown && showdown.over) {
+          if (match && Date.now() - match.startedAt < 2000) break; // dua-duanya tap bareng
+          startMatch("online");
+          if (onlineIsHost()) onlineBeginRound();
+        }
+        break;
+      case "leave":
+        onlineOpponentLeft();
+        break;
+    }
+  }
+
+  function onlineOpponentLeft() {
+    if (onlineLeaving) { onlineLeaving = false; return; } // kita yang keluar
+    var wasHost = window.AFOnline && AFOnline.isHost;
+    toast("Lawan keluar room.");
+    if (match) closeMatchUI(true);
+    if (wasHost) {
+      // Host tetap di room, tunggu lawan baru.
+      $("roomPanel").classList.remove("hidden");
+      $("startOnlineBtn").classList.add("hidden");
+      $("roomStatus").textContent = "Lawan keluar — room " + AFOnline.roomCode + " masih buka, tunggu lawan baru.";
+    } else {
+      onlineResetRoomPanel();
+      if (window.AFOnline) AFOnline.destroy();
+    }
+  }
+
+  function onlineResetRoomPanel() {
+    $("roomPanel").classList.remove("hidden");
+    $("roomInfo").classList.add("hidden");
+    $("startOnlineBtn").classList.add("hidden");
+    $("roomStatus").textContent = "Bikin room baru atau gabung pakai kode teman lo.";
+  }
+
+  function onlineSetupHandlers() {
+    if (!window.AFOnline) return;
+    AFOnline.onEvent = function (ev) {
+      switch (ev.type) {
+        case "waiting":
+          $("roomInfo").classList.remove("hidden");
+          $("roomCodeLabel").textContent = ev.code;
+          $("roomStatus").textContent = "Room " + ev.code + " — bagikan kode/link ke teman lo.";
+          $("startOnlineBtn").classList.add("hidden");
+          break;
+        case "connected":
+          if (!AFOnline.isHost) {
+            AFOnline.send({ t: "join", name: AFOnline.myName });
+            $("roomStatus").textContent = "Terhubung! Menunggu host...";
+          }
+          break;
+        case "message":
+          onlineHandleMessage(ev.msg);
+          break;
+        case "disconnected":
+          onlineOpponentLeft();
+          break;
+        case "error":
+          toast(ev.message || "Terjadi error koneksi.");
+          break;
+        case "left":
+          onlineLeaving = false;
+          onlineResetRoomPanel();
+          break;
+      }
+    };
+  }
+
+  // ---------------- ROOM UI ----------------
+  $("onlineBtn").addEventListener("click", function () {
+    sfx.click();
+    if (typeof Peer === "undefined") { toast("Mode online tidak bisa dimuat — cek internet lalu refresh halaman."); return; }
+    $("roomPanel").classList.toggle("hidden");
+  });
+  $("createRoomBtn").addEventListener("click", function () {
+    sfx.click();
+    var name = ($("playerNameInput").value || "").trim();
+    if (window.AFOnline) AFOnline.createRoom(name);
+    $("roomStatus").textContent = "Bikin room...";
+  });
+  $("joinRoomBtn").addEventListener("click", function () {
+    sfx.click();
+    var name = ($("playerNameInput").value || "").trim();
+    var code = ($("roomCodeInput").value || "").trim();
+    if (!code) { toast("Masukin kode room dulu."); return; }
+    if (window.AFOnline) AFOnline.joinRoom(code, name);
+    $("roomStatus").textContent = "Join room " + code.toUpperCase() + "...";
+  });
+  $("copyLinkBtn").addEventListener("click", function () {
+    sfx.click();
+    var link = window.AFOnline ? AFOnline.inviteLink() : "";
+    if (!link) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(function () { toast("Link invite disalin!"); }, function () { toast(link); });
+    } else {
+      toast(link);
+    }
+  });
+  $("startOnlineBtn").addEventListener("click", function () {
+    sfx.click();
+    if (!window.AFOnline || !AFOnline.connected) { toast("Belum ada lawan di room."); return; }
+    $("roomPanel").classList.add("hidden");
+    startMatch("online");
+    AFOnline.send({ t: "start" });
+    onlineBeginRound();
+  });
+  $("leaveRoomBtn").addEventListener("click", function () {
+    sfx.click();
+    if (match && match.online) closeMatchUI();
+    else if (window.AFOnline) AFOnline.leave();
+    onlineResetRoomPanel();
+  });
+
   // ---------------- START ----------------
   $("galleryCount").textContent = "(" + CHARACTERS.length + ")";
+  onlineSetupHandlers();
+  if (typeof Peer === "undefined") {
+    $("onlineBtn").disabled = true;
+    $("onlineBtn").textContent = "1VS1 ONLINE (BUTUH INTERNET)";
+  }
+  // Link invite: ?join=XXXXXX -> buka panel room + isi kode.
+  var joinParam = null;
+  try { joinParam = new URLSearchParams(location.search).get("join"); } catch (e) {}
+  if (joinParam) {
+    document.querySelector('.tab[data-tab="battle"]').click();
+    $("roomPanel").classList.remove("hidden");
+    $("roomCodeInput").value = joinParam.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    toast("Kode room " + joinParam.toUpperCase() + " terdeteksi — isi nama lalu tap GABUNG.");
+  }
   renderAll();
 })();
