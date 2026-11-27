@@ -26,14 +26,13 @@
   <!-- ============ TAB MAIN ============ -->
   <section id="tab-main" class="tabpage active">
     <div class="panel">
-      <h2>POWER BUILDING — BUILD FIGHTER</h2>
-      <p class="hint">Tap ROLL di tiap slot buat dapetin karakter acak — rarity-nya ikut rate: Common 40%, Rare 28%, Epic 14%, Legendary 11%, Mythical 5%, Secret 2%. Roll pertama tiap slot gratis, reroll 50 Cash. Satu karakter cuma bisa isi satu slot. Power fighter = rata-rata 5 stat.</p>
-      <div id="buildSlots"></div>
-      <div id="powerBox" class="power-box"></div>
-      <div class="build-actions">
-        <button id="rollAllBtn" class="btn btn-purple">ROLL SEMUA SLOT</button>
-        <button id="resetBuildBtn" class="btn btn-gray">RESET</button>
-      </div>
+      <h2>CARA MAIN</h2>
+      <p class="hint">1. Buka tab BATTLE, tap SHOWDOWN VS BOT atau DUEL TEMAN.<br>
+      2. Tiap ronde, lo (dan lawan) gacha 1 karakter acak — rarity ikut rate: Common 40%, Rare 28%, Epic 14%, Legendary 11%, Mythical 5%, Secret 2%.<br>
+      3. Lo pilih sendiri karakter itu masuk slot mana: Kekuatan, Kecepatan, Kemampuan, Kepintaran, atau Ketahanan. Satu karakter cuma bisa isi satu slot.<br>
+      4. Tiap ronde ada timer 15 detik — kalau habis, karakter otomatis masuk slot acak yang masih kosong.<br>
+      5. Reroll karakter ronde itu: 100 Cash. Menang battle: +100 Cash, +1 Win. Kalah: +15 Cash. Seri: +50 Cash.<br>
+      6. Setelah 5 ronde, SHOWDOWN: rata-rata 5 stat diadu, tertinggi menang (atau terendah di mode Reverse).</p>
     </div>
   </section>
 
@@ -41,7 +40,7 @@
   <section id="tab-battle" class="tabpage">
     <div class="panel">
       <h2>SHOWDOWN</h2>
-      <p class="hint">Adu Power! Fighter lo (5 stat dari Power Building) diadu rata-ratanya lawan bot. AVG SCORE tertinggi menang — tanpa HP, tanpa damage, murni adu stat kayak di Roblox-nya.</p>
+      <p class="hint">Match dimulai, baru bangun fighter — tiap ronde gacha 1 karakter, lo yang pilih masuk slot mana. 5 ronde, terus SHOWDOWN adu rata-rata stat, kayak di Roblox-nya.</p>
       <div class="battle-menu">
         <label class="mode-label" for="battleMode">Mode:</label>
         <select id="battleMode">
@@ -51,14 +50,18 @@
         <button id="botBtn" class="btn btn-red btn-big">SHOWDOWN VS BOT</button>
         <button id="duelBtn" class="btn btn-blue btn-big">DUEL TEMAN (1 LAYAR)</button>
       </div>
-      <div id="duelPicker" class="duel-picker hidden">
-        <h3>TEMAN SUSUN 5 KARAKTER (SATU PER SLOT)</h3>
-        <p class="hint">Teman tap 5 karakter dari semua roster — urutan tap = slot Kekuatan, Kecepatan, Kemampuan, Kepintaran, Ketahanan.</p>
-        <input id="duelSearch" type="text" placeholder="Cari karakter...">
-        <div id="duelGrid" class="grid"></div>
-        <div id="duelSlots" class="duel-slots"></div>
-        <button id="duelStartBtn" class="btn btn-blue btn-big">MULAI SHOWDOWN</button>
+
+      <div id="matchPanel" class="match-panel hidden">
+        <h3 id="matchTitle">SHOWDOWN VS BOT</h3>
+        <div class="match-top"><span id="roundLabel">RONDE 1/5</span><span id="timerLabel">Waktu: 15 dtk</span></div>
+        <p class="hint" id="turnLabel"></p>
+        <div id="rollCard" class="roll-card-wrap"></div>
+        <button id="rerollBtn" class="btn btn-purple btn-big">REROLL (100 CASH)</button>
+        <h3>PILIH SLOT BUAT KARAKTER INI</h3>
+        <div id="matchSlots"></div>
+        <button id="matchBackBtn" class="btn btn-gray" style="margin-top:12px">KEMBALI</button>
       </div>
+
       <div id="arena" class="arena hidden">
         <div id="showdownBox"></div>
         <div class="attack-row" style="margin-top:12px">
