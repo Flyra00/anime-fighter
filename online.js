@@ -47,10 +47,14 @@
   var connTimer = null;
 
   // v4.4 (TURN test, Neon): factory opsi Peer — SELALU objek baru per Peer
-  // (RTCPeerConnection boleh memutasi config). STUN Google ditulis ulang
-  // eksplisit karena config menggantikan iceServers default PeerJS.
-  // TURN = OpenRelay (Metered, publik, tanpa signup, 20 GB/bln) — UDP +
-  // TCP + TLS di port 80/443, karena browser cloud sering memblokir UDP.
+  // (RTCPeerConnection boleh memutasi config). STUN Google + TURN bawaan
+  // PeerJS ditulis ulang eksplisit karena config MENGGANTIKAN iceServers
+  // default — kalau tidak ditulis, TURN bawaan hilang diam-diam (koreksi
+  // 27 Nov: klaim "PeerJS tanpa TURN" SALAH; bundle 1.5.4 membuktikan ada
+  // turn:eu-0 + us-0.turn.peerjs.com:3478, peerjs/peerjsp).
+  // TURN tambahan = OpenRelay (Metered, publik, tanpa signup, 20 GB/bln)
+  // — UDP + TCP + TLS di port 80/443, karena browser cloud sering
+  // memblokir UDP dan port 3478.
   function peerOptions() {
     return {
       debug: 0,
@@ -58,6 +62,7 @@
         iceServers: [
           { urls: "stun:stun.l.google.com:19302" },
           { urls: "stun:stun1.l.google.com:19302" },
+          { urls: ["turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478"], username: "peerjs", credential: "peerjsp" },
           { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
           { urls: "turn:openrelay.metered.ca:80?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
           { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
