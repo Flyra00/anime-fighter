@@ -1,6 +1,8 @@
-// Anime Fighter (web) v4 — ala Build An Anime Character.
+// Anime Fighter (web) v4.1 — ala Build An Anime Character.
 // Match lokal (bot/duel 1 layar): 5 ronde, gacha sepasang, pasang sendiri,
-// stat disembunyiin selama match, timer acak 11-20 dtk, reroll sepasang 100 Cash.
+// stat DITAMPILIN selama match (chip di kartu + nilai per slot), timer acak
+// 11-20 dtk, reroll sepasang 100 Cash. Gambar kartu object-fit contain
+// (utuh, tidak kepotong). Battle menu disembunyiin saat match aktif.
 // ONLINE 1v1 (PeerJS P2P): host buat room (kode 6 huruf), teman join pakai
 // kode/link. Host = wasit: gacha sepasang tiap ronde, pegang timer (endsAt),
 // auto-place buat yang belum pasang. Tamu tidak auto-place sendiri — state
@@ -85,12 +87,22 @@
   }
   var sfx = {
     click: function () { tone(700, 0.06, "square", 0.08); },
-    pop: function () { tone(500, 0.09, "sine", 0.2, 0, 900); },
-    punch: function () { noiseBurst(0.12, 0.5, 900); tone(160, 0.14, "sine", 0.35, 0, 60); },
+    pop: function () { tone(500, 0.09, "sine", 0.18, 0, 900); },
+    punch: function () { noiseBurst(0.12, 0.2, 900); tone(160, 0.14, "sine", 0.2, 0, 60); },
     swing: function () { noiseBurst(0.14, 0.16, 2400); },
-    coin: function () { tone(880, 0.09, "sine", 0.18); tone(1320, 0.14, "sine", 0.18, 0.08); },
-    levelup: function () { var n = [523, 659, 784, 1047]; for (var i = 0; i < n.length; i++) tone(n[i], 0.12, "triangle", 0.18, i * 0.09); },
-    win: function () { var n = [523, 659, 784, 1047, 1319]; for (var i = 0; i < n.length; i++) tone(n[i], 0.18, "triangle", 0.2, i * 0.11); }
+    coin: function () { tone(880, 0.09, "sine", 0.16); tone(1320, 0.14, "sine", 0.16, 0.08); },
+    levelup: function () { var n = [523, 659, 784, 1047]; for (var i = 0; i < n.length; i++) tone(n[i], 0.12, "triangle", 0.16, i * 0.09); },
+    win: function () { var n = [523, 659, 784, 1047, 1319]; for (var i = 0; i < n.length; i++) tone(n[i], 0.18, "triangle", 0.18, i * 0.11); },
+    lose: function () { var n = [440, 392, 349, 294]; for (var i = 0; i < n.length; i++) tone(n[i], 0.16, "triangle", 0.16, i * 0.11); },
+    draw: function () { tone(440, 0.14, "triangle", 0.15, 0); tone(440, 0.18, "triangle", 0.15, 0.16); },
+    roundStart: function () { tone(523, 0.08, "triangle", 0.14, 0); tone(784, 0.12, "triangle", 0.15, 0.07); },
+    oppPlace: function () { tone(988, 0.07, "sine", 0.12, 0); },
+    tick: function () { tone(880, 0.04, "square", 0.07, 0); },
+    reroll: function () { noiseBurst(0.12, 0.14, 2000); tone(380, 0.12, "sine", 0.14, 0.04, 820); },
+    showdown: function () { var n = [392, 523, 659, 784]; for (var i = 0; i < n.length; i++) tone(n[i], 0.1, "sawtooth", 0.1, i * 0.07); },
+    roomJoin: function () { tone(659, 0.09, "sine", 0.16, 0); tone(988, 0.14, "sine", 0.16, 0.09); },
+    matchStart: function () { var n = [523, 659, 784]; for (var i = 0; i < n.length; i++) tone(n[i], 0.12, "triangle", 0.16, i * 0.08); },
+    error: function () { tone(220, 0.12, "sawtooth", 0.12, 0); tone(180, 0.16, "sawtooth", 0.12, 0.12); }
   };
 
   // ---------------- BANTU ----------------
@@ -114,9 +126,16 @@
   }
   function statLine(c) {
     if (c.stats) {
-      return "STR " + c.stats.str + " &nbsp;SPD " + c.stats.spd + " &nbsp;ABI " + c.stats.abi + " &nbsp;IQ " + c.stats.iq + " &nbsp;DUR " + c.stats.dur;
+      return '<span class="stat-chip">STR <b>' + c.stats.str + '</b></span>' +
+        '<span class="stat-chip">SPD <b>' + c.stats.spd + '</b></span>' +
+        '<span class="stat-chip">ABI <b>' + c.stats.abi + '</b></span>' +
+        '<span class="stat-chip">IQ <b>' + c.stats.iq + '</b></span>' +
+        '<span class="stat-chip">DUR <b>' + c.stats.dur + '</b></span>';
     }
-    return "ATK " + c.atk + " &nbsp;DEF " + c.def + " &nbsp;SPD " + c.spd + " &nbsp;HP " + c.hp;
+    return '<span class="stat-chip">ATK <b>' + c.atk + '</b></span>' +
+      '<span class="stat-chip">DEF <b>' + c.def + '</b></span>' +
+      '<span class="stat-chip">SPD <b>' + c.spd + '</b></span>' +
+      '<span class="stat-chip">HP <b>' + c.hp + '</b></span>';
   }
   function slotLabel(key) {
     for (var i = 0; i < SLOT_DEFS.length; i++) if (SLOT_DEFS[i].key === key) return SLOT_DEFS[i].label;
@@ -223,9 +242,12 @@
     };
     save.battles++; persist();
     showdown = null;
+    $("battleMenu").classList.add("hidden");
+    $("roomPanel").classList.add("hidden");
     $("arena").classList.add("hidden");
     $("matchPanel").classList.remove("hidden");
     $("matchTitle").textContent = mode === "bot" ? "SHOWDOWN VS BOT" : (mode === "duel" ? "DUEL TEMAN (1 LAYAR)" : "1VS1 ONLINE");
+    sfx.matchStart();
     renderBadges();
     if (mode === "online") return; // ronde pertama datang dari host (pesan round)
     beginRound();
@@ -237,6 +259,7 @@
     var pa = rollUnique(match.a, []);
     var pb = rollUnique(match.b, [pa.id]);
     match.pair = { a: pa, b: pb };
+    if (match.round > 1) sfx.roundStart();
     beginTurn("a");
   }
   // Bot lock-in bareng pas pemain pasang: pasang karakternya (pair.b) greedy
@@ -269,6 +292,7 @@
       var t = $("timerLabel");
       t.textContent = "Waktu: " + match.timeLeft + " dtk";
       if (match.timeLeft <= 5) t.classList.add("timer-danger"); else t.classList.remove("timer-danger");
+      if (match.timeLeft > 0 && match.timeLeft <= 3) sfx.tick();
       if (match.timeLeft <= 0) {
         if (match.online) onlineTimeout();
         else autoPlace();
@@ -315,6 +339,7 @@
     stopTimer();
     if (match.mode === "bot") {
       lockOpponent(); // lawan lock-in bareng
+      sfx.oppPlace();
       if (filledCount(match.a) === 5) { finishMatch(); return; }
       match.round++;
       beginRound();
@@ -340,6 +365,7 @@
         match.pair = { a: pa, b: pb };
         AFOnline.send({ t: "round", n: match.round, pair: { a: pa.id, b: pb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
         match.roll = match.pair[match.mySide];
+        sfx.reroll();
         renderBadges();
         renderMatch();
         toast("Reroll: " + match.roll.name + " [" + match.roll.rarity + "] — " + match.roll.move + "!");
@@ -366,14 +392,14 @@
     match.pair = match.turn === "a" ? { a: pa, b: pb } : { a: pb, b: pa };
     match.roll = match.pair[match.turn];
     persist();
-    sfx.pop();
+    sfx.reroll();
     if (match.roll.rarity === "Legendary" || match.roll.rarity === "Mythical" || match.roll.rarity === "Secret") sfx.levelup();
     renderBadges();
     renderMatch();
     toast("Reroll: " + match.roll.name + " [" + match.roll.rarity + "] — " + match.roll.move + "!");
   }
   // Panel lawan (LIVE): 5 slot lawan terisi satu per satu tiap ronde,
-  // keliatan karakternya — tanpa angka stat (disembunyiin selama match).
+  // keliatan karakternya + nilai stat untuk slot itu.
   function renderOppPanel() {
     var oppParts, oppName;
     if (match.online) {
@@ -392,7 +418,7 @@
       var id = oppParts[d.key];
       var c = id ? charById(id) : null;
       html += '<div class="opp-row"><span class="opp-label">' + d.label + '</span>' +
-        (c ? imgHtml(c) + '<span class="opp-name">' + esc(c.name) + '</span>' :
+        (c ? imgHtml(c) + '<span class="opp-name">' + esc(c.name) + '</span><span class="opp-val">' + statOf(c, d.key) + '</span>' :
           '<span class="opp-empty">— menunggu —</span>') +
         "</div>";
     });
@@ -422,7 +448,7 @@
     }
     $("turnLabel").textContent = who;
     renderOppPanel();
-    // VS pair: roll lo vs roll lawan, live. Tanpa angka stat (class no-stats).
+    // VS pair: roll lo vs roll lawan, live. Stat tampil sebagai chip.
     var myLabel, oppLabel;
     if (match.online) {
       myLabel = (window.AFOnline && AFOnline.myName) || "LO";
@@ -433,7 +459,7 @@
     }
     var myChar = match.online ? match.pair[match.mySide] : match.pair[match.turn];
     var oppChar = match.online ? match.pair[match.oppSide] : match.pair[match.turn === "a" ? "b" : "a"];
-    $("rollCard").innerHTML = '<div class="vs-pair no-stats">' +
+    $("rollCard").innerHTML = '<div class="vs-pair">' +
       '<div class="vs-side"><div class="vs-side-label">' + esc(myLabel) + '</div>' + cardHtml(myChar, false) + "</div>" +
       '<div class="vs-mid">VS</div>' +
       '<div class="vs-side"><div class="vs-side-label">' + esc(oppLabel) + '</div>' + cardHtml(oppChar, false) + "</div>" +
@@ -450,14 +476,15 @@
       var c = id ? charById(id) : null;
       html += '<button class="build-slot match-slot" data-slot="' + d.key + '"' + ((c || (match.online && match.myPlaced)) ? " disabled" : "") + ">";
       if (c) {
-        // Tanpa angka stat selama match — cuma nama + jurus.
         html += imgHtml(c) +
           '<span class="slot-info"><span class="slot-label">' + d.label + ' <span class="slot-sub">(' + d.sub + ')</span></span>' +
           '<span class="slot-char">' + esc(c.name) + '</span>' +
-          '<span class="slot-move">Jurus: ' + esc(c.move) + '</span></span>';
+          '<span class="slot-move">Jurus: ' + esc(c.move) + '</span></span>' +
+          '<span class="slot-val">' + statOf(c, d.key) + '</span>';
       } else {
         html += '<span class="slot-info"><span class="slot-label">' + d.label + ' <span class="slot-sub">(' + d.sub + ')</span></span>' +
-          '<span class="slot-empty">+ Kosong — tap buat pasang ' + esc(match.roll.name) + '</span></span>';
+          '<span class="slot-empty">+ Kosong — tap buat pasang ' + esc(match.roll.name) + '</span></span>' +
+          '<span class="slot-val slot-val-preview">' + statOf(match.roll, d.key) + '</span>';
       }
       html += "</button>";
     });
@@ -493,6 +520,7 @@
     $("showdownResult").innerHTML = "";
     $("showdownBtn").textContent = "SHOWDOWN!";
     $("showdownBtn").classList.remove("hidden");
+    sfx.showdown();
     renderShowdown();
   }
   function sdFighterHtml(title, parts, st, showVals) {
@@ -536,7 +564,7 @@
     if (winner === "draw") {
       msg = "SERI! AVG sama-sama " + a.avg.toFixed(1) + ". +50 Cash.";
       if (showdown.mode === "bot" || showdown.mode === "online") save.cash += DRAW_REWARD;
-      sfx.coin();
+      sfx.draw();
     } else if (winner === "A") {
       msg = "MENANG! " + a.avg.toFixed(1) + " vs " + b.avg.toFixed(1) + ". +100 Cash, +1 Win!";
       if (showdown.mode === "bot" || showdown.mode === "online") { save.cash += WIN_REWARD; save.wins++; }
@@ -544,7 +572,7 @@
     } else {
       msg = "KALAH. " + a.avg.toFixed(1) + " vs " + b.avg.toFixed(1) + ". +15 Cash.";
       if (showdown.mode === "bot" || showdown.mode === "online") save.cash += LOSE_REWARD;
-      sfx.coin();
+      sfx.lose();
     }
     persist();
     var rematchHtml = "";
@@ -569,6 +597,7 @@
     showdown = null;
     $("arena").classList.add("hidden");
     $("matchPanel").classList.add("hidden");
+    $("battleMenu").classList.remove("hidden");
   }
   $("backBtn").addEventListener("click", closeMatchUI);
   $("matchBackBtn").addEventListener("click", closeMatchUI);
@@ -640,10 +669,14 @@
         save.cash -= REROLL_COST;
         persist();
         renderBadges();
+        sfx.reroll();
         toast("Reroll: " + match.pair[match.mySide].name + "!");
       } else {
+        sfx.error();
         toast("Reroll ditolak — sudah ada yang pasang.");
       }
+    } else if (match.round > 1) {
+      sfx.roundStart();
     }
     beginTurn(match.mySide);
   }
@@ -710,8 +743,10 @@
         } else {
           AFOnline.send({ t: "welcome", name: AFOnline.myName, inMatch: false });
         }
+        $("roomStatus").className = "hint status-ok";
         $("roomStatus").textContent = "Lawan masuk: " + AFOnline.oppName + " — tap MULAI MATCH.";
         $("startOnlineBtn").classList.remove("hidden");
+        sfx.roomJoin();
         toast(AFOnline.oppName + " masuk room!");
         break;
       case "welcome": // tamu: host jawab
@@ -733,7 +768,7 @@
         if (oppParts[msg.slot]) break; // sudah terisi (auto-place host vs pesan telat)
         oppParts[msg.slot] = msg.charId;
         match.oppPlaced = true;
-        sfx.pop();
+        sfx.oppPlace();
         renderMatch();
         if (onlineIsHost()) onlineAdvanceIfReady();
         break;
@@ -787,6 +822,8 @@
     $("roomPanel").classList.remove("hidden");
     $("roomInfo").classList.add("hidden");
     $("startOnlineBtn").classList.add("hidden");
+    $("retryJoinBtn").classList.add("hidden");
+    $("roomStatus").className = "hint";
     $("roomStatus").textContent = "Bikin room baru atau gabung pakai kode teman lo.";
   }
 
@@ -796,13 +833,34 @@
       switch (ev.type) {
         case "waiting":
           $("roomInfo").classList.remove("hidden");
+          $("retryJoinBtn").classList.add("hidden");
           $("roomCodeLabel").textContent = ev.code;
-          $("roomStatus").textContent = "Room " + ev.code + " — bagikan kode/link ke teman lo.";
+          $("roomStatus").className = "hint status-ok";
+          $("roomStatus").textContent = "ROOM AKTIF (" + ev.code + ") — bagikan kode/link ke teman lo.";
           $("startOnlineBtn").classList.add("hidden");
           break;
+        case "peer-disconnected":
+          // Host: room-nya yang putus. Tamu: koneksinya ke cloud yang putus
+          // (bukan room) — arahkan ke COBA LAGI, bukan pesan room.
+          if (AFOnline.isHost) {
+            $("roomStatus").className = "hint status-warn";
+            $("roomStatus").textContent = "ROOM PUTUS — menyambung ulang... Jangan pindah aplikasi / kunci HP.";
+          } else {
+            $("roomStatus").className = "hint status-warn";
+            $("roomStatus").textContent = "Koneksi putus — tap COBA LAGI buat gabung ulang.";
+            $("retryJoinBtn").classList.remove("hidden");
+          }
+          break;
+        case "peer-reconnected":
+          $("roomStatus").className = "hint status-ok";
+          $("roomStatus").textContent = "ROOM AKTIF kembali (" + ev.code + ") — siap menerima lawan.";
+          toast("Koneksi room tersambung ulang!");
+          break;
         case "connected":
+          $("retryJoinBtn").classList.add("hidden");
           if (!AFOnline.isHost) {
             AFOnline.send({ t: "join", name: AFOnline.myName });
+            $("roomStatus").className = "hint status-ok";
             $("roomStatus").textContent = "Terhubung! Menunggu host...";
           }
           break;
@@ -812,7 +870,15 @@
         case "disconnected":
           onlineOpponentLeft();
           break;
+        case "peer-unavailable":
+          sfx.error();
+          $("roomStatus").className = "hint status-warn";
+          $("roomStatus").textContent = ev.message;
+          $("retryJoinBtn").classList.remove("hidden");
+          toast("Room " + ev.code + " tidak ketemu.");
+          break;
         case "error":
+          sfx.error();
           toast(ev.message || "Terjadi error koneksi.");
           break;
         case "left":
@@ -839,9 +905,18 @@
     sfx.click();
     var name = ($("playerNameInput").value || "").trim();
     var code = ($("roomCodeInput").value || "").trim();
-    if (!code) { toast("Masukin kode room dulu."); return; }
+    if (!code) { sfx.error(); toast("Masukin kode room dulu."); return; }
+    $("retryJoinBtn").classList.add("hidden");
+    $("roomStatus").className = "hint";
     if (window.AFOnline) AFOnline.joinRoom(code, name);
     $("roomStatus").textContent = "Join room " + code.toUpperCase() + "...";
+  });
+  $("retryJoinBtn").addEventListener("click", function () {
+    sfx.click();
+    $("retryJoinBtn").classList.add("hidden");
+    $("roomStatus").className = "hint";
+    $("roomStatus").textContent = "Mencoba gabung ulang ke room " + (AFOnline.roomCode || "") + "...";
+    if (window.AFOnline) AFOnline.retryJoin();
   });
   $("copyLinkBtn").addEventListener("click", function () {
     sfx.click();

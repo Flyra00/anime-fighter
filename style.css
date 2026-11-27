@@ -1,4 +1,5 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overflow-x: clip; max-width: 100%; }
 body {
   font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   background: #12121c; color: #f2f2f7; min-height: 100vh;
@@ -25,7 +26,7 @@ main { max-width: 960px; margin: 0 auto; padding: 12px; }
 .tabpage.active { display: block; }
 .panel {
   background: #1c1c2b; border: 1px solid #2e2e45; border-radius: 12px;
-  padding: 16px; margin-bottom: 14px;
+  padding: 14px; margin-bottom: 14px; max-width: 100%; overflow: hidden;
 }
 .panel h2 { font-size: 18px; margin-bottom: 8px; color: #ffb400; letter-spacing: .5px; }
 .panel h3 { font-size: 15px; margin: 12px 0 8px; }
@@ -50,22 +51,30 @@ main { max-width: 960px; margin: 0 auto; padding: 12px; }
 .card {
   background: #23233a; border: 2px solid #3d3d5c; border-radius: 12px;
   overflow: hidden; cursor: pointer; text-align: left; padding: 0; color: #fff;
-  font-family: inherit;
+  font-family: inherit; max-width: 100%; min-width: 0;
 }
 .card.selected { border-color: #ffd700; box-shadow: 0 0 0 2px #ffd700; }
 .card img, .card .img-fallback {
-  width: 100%; height: 150px; object-fit: cover; object-position: top;
-  display: block; background: #2a2a3d;
+  width: 100%; height: 160px; object-fit: contain; object-position: center;
+  display: block; background: #161626;
 }
 .card .img-fallback {
   display: flex; align-items: center; justify-content: center;
   font-size: 64px; font-weight: 900; color: rgba(255,255,255,.9);
 }
-.card .card-body { padding: 8px 10px 10px; }
-.card .card-name { font-weight: 800; font-size: 15px; line-height: 1.2; }
-.card .card-anime { font-size: 12px; color: #a9a9c4; margin-top: 2px; }
-.card .card-move { font-size: 12px; color: #ffd479; margin-top: 2px; }
-.card .card-stats { font-size: 12px; color: #d7d7ea; margin-top: 4px; line-height: 1.5; }
+.card .card-body { padding: 8px; min-width: 0; }
+.card .card-name { font-weight: 800; font-size: 14px; line-height: 1.2; word-break: break-word; }
+.card .card-anime { font-size: 11px; color: #a9a9c4; margin-top: 2px; }
+.card .card-move { font-size: 11px; color: #ffd479; margin-top: 2px; word-break: break-word; }
+.card .card-stats {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  font-size: 10px; color: #d7d7ea; margin-top: 5px; line-height: 1.2;
+}
+.stat-chip {
+  background: #141424; border: 1px solid #343452; border-radius: 4px;
+  padding: 2px 4px; white-space: nowrap;
+}
+.stat-chip b { color: #ffd479; }
 .card .card-count {
   display: inline-block; margin-top: 6px; background: #12121c; border-radius: 999px;
   padding: 2px 8px; font-size: 12px; font-weight: 700;
@@ -178,23 +187,23 @@ input[type="text"], select {
 .build-slot .slot-char { font-weight: 800; font-size: 15px; }
 .build-slot .slot-move { font-size: 12px; color: #ffd479; }
 .build-slot .slot-empty { color: #a9a9c4; font-size: 13px; line-height: 1.4; }
-.build-slot .slot-val { margin-left: auto; font-weight: 900; font-size: 22px; color: #ffd479; flex-shrink: 0; }
+.build-slot .slot-val { margin-left: auto; font-weight: 900; font-size: 20px; color: #ffd479; flex-shrink: 0; padding-left: 6px; }
+.build-slot .slot-val-preview { color: #7dd3fc; font-size: 16px; }
 .match-top { display: flex; justify-content: space-between; font-weight: 900; font-size: 15px; color: #ffb400; margin: 8px 0 4px; }
 .timer-danger { color: #ff5252; }
 .roll-card-wrap { margin: 10px 0; }
 #rerollBtn { width: 100%; margin-bottom: 12px; }
 #rerollBtn:disabled { opacity: .45; cursor: default; }
 /* ---------- VS PAIR + PANEL LAWAN LIVE (v3.1) ---------- */
-.vs-pair { display: flex; gap: 8px; align-items: stretch; }
-.vs-pair .vs-side { flex: 1; min-width: 0; }
-.vs-pair .vs-side .card { width: 100%; cursor: default; }
+.vs-pair { display: flex; gap: 6px; align-items: stretch; width: 100%; max-width: 100%; }
+.vs-pair .vs-side { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+.vs-pair .vs-side .card { width: 100%; flex: 1; cursor: default; }
 .vs-side-label { font-weight: 900; font-size: 12px; color: #ffb400; text-align: center; margin-bottom: 4px; letter-spacing: 1px; }
-.vs-mid { align-self: center; font-weight: 900; font-size: 18px; color: #ff5252; flex-shrink: 0; }
-.no-stats .card-stats { display: none; }
+.vs-mid { align-self: center; font-weight: 900; font-size: 15px; color: #ff5252; flex-shrink: 0; }
 .opp-row {
   display: flex; gap: 8px; align-items: center;
   background: #12121c; border: 1px solid #3d3d5c; border-radius: 8px;
-  padding: 4px 8px; margin-bottom: 5px;
+  padding: 4px 8px; margin-bottom: 5px; min-width: 0;
 }
 .opp-row img, .opp-row .img-fallback {
   width: 30px; height: 36px; object-fit: cover; object-position: top;
@@ -204,9 +213,13 @@ input[type="text"], select {
   display: flex; align-items: center; justify-content: center;
   font-size: 16px; font-weight: 900; color: rgba(255,255,255,.9);
 }
-.opp-label { font-weight: 800; font-size: 12px; color: #ffb400; width: 92px; flex-shrink: 0; }
-.opp-name { font-weight: 800; font-size: 13px; }
+.opp-label { font-weight: 800; font-size: 12px; color: #ffb400; width: 88px; flex-shrink: 0; }
+.opp-name { font-weight: 800; font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opp-val { margin-left: auto; font-weight: 900; font-size: 14px; color: #ffd479; flex-shrink: 0; }
 .opp-empty { font-size: 12px; color: #a9a9c4; }
+.room-warn { font-size: 12px; color: #ffd479; margin: 0 0 8px; line-height: 1.35; }
+.status-ok { color: #37d67a !important; font-weight: 700; }
+.status-warn { color: #ff6b6b !important; font-weight: 700; }
 /* ---------- ROOM ONLINE 1V1 (v4) ---------- */
 .room-panel { background: #12121c; border: 2px solid #7c3aed; border-radius: 12px; padding: 12px; margin-top: 12px; }
 .room-panel h3 { margin: 0 0 8px; }
@@ -266,12 +279,14 @@ input[type="text"], select {
 
 /* Kartu: isi kartu harus baris terpisah (div), bukan span inline yang nempel. */
 .card .card-body { display: block; }
-.card .card-name, .card .card-anime, .card .card-move, .card .card-stats, .card .card-count { display: block; }
+.card .card-name, .card .card-anime, .card .card-move, .card .card-count { display: block; }
 .card .card-used { display: block; margin-top: 4px; font-size: 11px; font-weight: 800; color: #37d67a; }
 
 @media (max-width: 560px) {
+  main { padding: 8px; }
+  .panel { padding: 10px; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
-  .card img, .card .img-fallback { height: 128px; }
+  .card img, .card .img-fallback { height: 140px; }
   .logo { font-size: 18px; }
   .gallery-tools { flex-direction: column; }
   .gallery-tools select { width: 100%; }

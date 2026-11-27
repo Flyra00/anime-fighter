@@ -22,8 +22,38 @@
     oppName: "",
     roomCode: "",
     connected: false,
+    reconnecting: false,
     onEvent: null, // function (ev) — ev = {type, ...}
   };
+
+  var reconnectTimer = null;
+
+  // Daftar ulang ke signaling server dengan ID yang sama (af-XXXXXX) kalau
+  // WebSocket ke cloud putus (mis. tab host di-suspend Android saat pindah
+  // aplikasi). Guard wajib PeerJS 1.5.4: jangan reconnect peer yang destroyed.
+  function tryReconnect() {
+    var p = Online.peer;
+    if (!p || p.destroyed || !p.disconnected) return;
+    if (Online.reconnecting) return;
+    Online.reconnecting = true;
+    emit({ type: "peer-disconnected", code: Online.roomCode });
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(function () {
+      Online.reconnecting = false;
+      if (Online.peer && !Online.peer.destroyed && Online.peer.disconnected) {
+        try { Online.peer.reconnect(); } catch (e) {}
+      }
+    }, 1500);
+  }
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") tryReconnect();
+    });
+  }
+  if (typeof window !== "undefined") {
+    window.addEventListener("online", function () { tryReconnect(); });
+  }
 
   function emit(ev) {
     if (typeof Online.onEvent === "function") {
@@ -44,20 +74,58 @@
   function wireConn(conn) {
     Online.conn = conn;
     conn.on("open", function () {
+      if (Online.conn !== conn) return; // conn lama yang telat — abaikan
       Online.connected = true;
       emit({ type: "connected" });
     });
     conn.on("data", function (data) {
+      if (Online.conn !== conn) return;
       var msg = null;
       try { msg = typeof data === "string" ? JSON.parse(data) : data; } catch (e) { return; }
       if (msg && msg.t) emit({ type: "message", msg: msg });
     });
     conn.on("close", function () {
+      if (Online.conn !== conn) return; // close telat dari conn lama — jangan bunuh join baru
       Online.connected = false;
       emit({ type: "disconnected" });
     });
     conn.on("error", function (err) {
+      if (Online.conn !== conn) return;
       emit({ type: "error", message: "Koneksi ke lawan error." });
+    });
+  }
+
+  function wireHostPeer(peer) {
+    Online.peer = peer;
+    var openedOnce = false;
+    peer.on("open", function () {
+      if (Online.peer !== peer) return; // peer lama yang telat buka — abaikan
+      Online.reconnecting = false;
+      if (openedOnce) {
+        emit({ type: "peer-reconnected", code: Online.roomCode });
+      } else {
+        openedOnce = true;
+        emit({ type: "waiting", code: Online.roomCode });
+      }
+    });
+    peer.on("connection", function (conn) {
+      if (Online.peer !== peer) { conn.close(); return; }
+      if (Online.conn && Online.connected) { conn.close(); return; } // room cuma 2 orang
+      wireConn(conn);
+    });
+    peer.on("disconnected", function () {
+      if (Online.peer !== peer) return;
+      tryReconnect();
+    });
+    peer.on("error", function (err) {
+      if (Online.peer !== peer) return;
+      if (err && err.type === "unavailable-id") {
+        try { peer.destroy(); } catch (e) {}
+        Online.roomCode = makeCode();
+        wireHostPeer(new Peer(PREFIX + Online.roomCode, { debug: 0 }));
+        return;
+      }
+      emit({ type: "error", message: "Gagal buat room. Coba lagi." });
     });
   }
 
@@ -68,23 +136,7 @@
     Online.isHost = true;
     Online.myName = name || "Pemain 1";
     Online.roomCode = makeCode();
-    var peer = new Peer(PREFIX + Online.roomCode, { debug: 0 });
-    Online.peer = peer;
-    peer.on("open", function () {
-      emit({ type: "waiting", code: Online.roomCode });
-    });
-    peer.on("connection", function (conn) {
-      if (Online.conn) { conn.close(); return; } // room cuma 2 orang
-      wireConn(conn);
-    });
-    peer.on("error", function (err) {
-      if (err && err.type === "unavailable-id") {
-        Online.roomCode = makeCode();
-        Online.peer = new Peer(PREFIX + Online.roomCode, { debug: 0 });
-        return;
-      }
-      emit({ type: "error", message: "Gagal buat room. Coba lagi." });
-    });
+    wireHostPeer(new Peer(PREFIX + Online.roomCode, { debug: 0 }));
   };
 
   // Tamu: join room pakai kode.
@@ -98,16 +150,31 @@
     var peer = new Peer({ debug: 0 });
     Online.peer = peer;
     peer.on("open", function () {
+      if (Online.peer !== peer) return; // peer lama yang telat buka — abaikan
       var conn = peer.connect(PREFIX + Online.roomCode, { reliable: true });
       wireConn(conn);
     });
+    peer.on("disconnected", function () {
+      if (Online.peer !== peer) return;
+      tryReconnect();
+    });
     peer.on("error", function (err) {
+      if (Online.peer !== peer) return;
       if (err && err.type === "peer-unavailable") {
-        emit({ type: "error", message: "Room " + Online.roomCode + " tidak ketemu — cek kodenya." });
+        emit({
+          type: "peer-unavailable",
+          code: Online.roomCode,
+          message: "Room " + Online.roomCode + " tidak ketemu. Pastikan host masih buka tab gamenya & belum pindah aplikasi, lalu tap COBA LAGI."
+        });
         return;
       }
       emit({ type: "error", message: "Gagal join room. Coba lagi." });
     });
+  };
+
+  Online.retryJoin = function () {
+    if (!Online.roomCode || Online.isHost) return;
+    Online.joinRoom(Online.roomCode, Online.myName);
   };
 
   Online.send = function (msg) {
@@ -124,10 +191,15 @@
   };
 
   Online.destroy = function () {
-    try { if (Online.conn) Online.conn.close(); } catch (e) {}
-    try { if (Online.peer) Online.peer.destroy(); } catch (e) {}
-    Online.peer = null;
+    clearTimeout(reconnectTimer);
+    Online.reconnecting = false;
+    // Null-kan dulu SEBELUM close/destroy: close conn lama itu async, dan
+    // handler "close"-nya harus diabaikan kalau join baru sudah jalan.
+    var c = Online.conn, p = Online.peer;
     Online.conn = null;
+    Online.peer = null;
+    try { if (c) c.close(); } catch (e) {}
+    try { if (p) p.destroy(); } catch (e) {}
     Online.connected = false;
     Online.roomCode = "";
     Online.oppName = "";

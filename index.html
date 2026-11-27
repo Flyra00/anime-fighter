@@ -30,7 +30,7 @@
       <p class="hint">1. Buka tab BATTLE, tap SHOWDOWN VS BOT atau DUEL TEMAN.<br>
       2. Tiap ronde, lo dan lawan gacha 1 karakter — ditampilin berdua kayak VS, live kayak di Roblox.<br>
       3. Lo pilih sendiri karakter lo masuk slot mana: Kekuatan, Kecepatan, Kemampuan, Kepintaran, atau Ketahanan. Satu karakter cuma bisa isi satu slot. Lawan juga masang karakternya di saat yang sama — keliatan live di panel lawan.<br>
-      4. Stat angka disembunyiin selama match — cuma keliatan di galeri karakter (tab SEMUA KARAKTER). Pasang pakai feeling + pengetahuan lo soal karakternya.<br>
+      4. Stat angka (STR, SPD, ABI, IQ, DUR) tampil di kartu dan tiap slot selama match — pakai angkanya buat milih slot terbaik!<br>
       5. Tiap ronde ada timer acak 11–20 detik — kalau habis, karakter otomatis masuk slot acak yang masih kosong.<br>
       6. Reroll sepasang karakter ronde itu: 100 Cash. Menang battle: +100 Cash, +1 Win. Kalah: +15 Cash. Seri: +50 Cash.<br>
       7. Setelah 5 ronde, SHOWDOWN: rata-rata 5 stat diadu, tertinggi menang (atau terendah di mode Reverse).<br>
@@ -43,7 +43,7 @@
     <div class="panel">
       <h2>SHOWDOWN</h2>
       <p class="hint">Match dimulai, baru bangun fighter — tiap ronde gacha 1 karakter, lo yang pilih masuk slot mana. 5 ronde, terus SHOWDOWN adu rata-rata stat, kayak di Roblox-nya.</p>
-      <div class="battle-menu">
+      <div id="battleMenu" class="battle-menu">
         <label class="mode-label" for="battleMode">Mode:</label>
         <select id="battleMode">
           <option value="normal">Normal — AVG tertinggi menang</option>
@@ -64,9 +64,11 @@
         </div>
         <div id="roomInfo" class="room-info hidden">
           <p class="hint">Kode room lo: <b id="roomCodeLabel"></b></p>
+          <p class="room-warn">Jangan pindah aplikasi / kunci HP terlalu lama selama room dibuka.</p>
           <button id="copyLinkBtn" class="btn btn-purple">SALIN LINK INVITE</button>
         </div>
         <p class="hint" id="roomStatus">Bikin room baru atau gabung pakai kode teman lo.</p>
+        <button id="retryJoinBtn" class="btn btn-blue btn-big hidden" style="margin-bottom:8px">COBA LAGI</button>
         <button id="startOnlineBtn" class="btn btn-red btn-big hidden">MULAI MATCH</button>
         <button id="leaveRoomBtn" class="btn btn-gray">KELUAR ROOM</button>
       </div>
