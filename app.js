@@ -21,6 +21,8 @@
   var REROLL_COST = 100;
   var ROUND_TIME_MIN = 11; // timer acak per ronde, kayak Roblox (teramati 11-20)
   var ROUND_TIME_MAX = 20;
+  var ROLL_BUFFER_MS = 1500; // v4.9.3: roll ~1.4 dtk tidak boleh makan waktu
+  // mikir tamu online — host menambahkan buffer ini ke endsAt tiap ronde.
   var WIN_REWARD = 100;
   var LOSE_REWARD = 15;
   var DRAW_REWARD = 50;
@@ -44,6 +46,7 @@
   function defaultSave() {
     return {
       cash: 200, wins: 0, battles: 0, soundOn: true,
+      anim: "auto", motionBannerDismissed: false,
       music: { on: true, track: "overtaken", vol: 25, url: "" },
       bg: { preset: "jojo", url: "" }
     };
@@ -120,6 +123,7 @@
     roundStart: function () { tone(523, 0.08, "triangle", 0.14, 0); tone(784, 0.12, "triangle", 0.15, 0.07); },
     oppPlace: function () { tone(988, 0.07, "sine", 0.12, 0); },
     tick: function () { tone(880, 0.04, "square", 0.07, 0); },
+    rollTick: function (step) { tone(480 + (step || 0) * 22, 0.05, "square", 0.08); },
     reroll: function () { noiseBurst(0.12, 0.14, 2000); tone(380, 0.12, "sine", 0.14, 0.04, 820); },
     showdown: function () { var n = [392, 523, 659, 784]; for (var i = 0; i < n.length; i++) tone(n[i], 0.1, "sawtooth", 0.1, i * 0.07); },
     roomJoin: function () { tone(659, 0.09, "sine", 0.16, 0); tone(988, 0.14, "sine", 0.16, 0.09); },
@@ -134,8 +138,8 @@
     var t = $("toast"); t.textContent = msg; t.classList.add("show");
     clearTimeout(t._timer); t._timer = setTimeout(function () { t.classList.remove("show"); }, 3200);
   }
-  function imgHtml(c, cls) {
-    if (c.img) return '<img class="' + (cls || "") + '" src="' + esc(c.img) + '" alt="' + esc(c.name) + '" loading="lazy" onerror="this.outerHTML=\'<div class=&quot;img-fallback&quot; style=&quot;background:' + esc(c.color) + '&quot;>' + esc(c.name.charAt(0)) + '</div>\'">';
+  function imgHtml(c, cls, eager) {
+    if (c.img) return '<img class="' + (cls || "") + '" src="' + esc(c.img) + '" alt="' + esc(c.name) + '"' + (eager ? "" : ' loading="lazy"') + ' onerror="this.outerHTML=\'<div class=&quot;img-fallback&quot; style=&quot;background:' + esc(c.color) + '&quot;>' + esc(c.name.charAt(0)) + '</div>\'">';
     return '<div class="img-fallback" style="background:' + esc(c.color) + '">' + esc(c.name.charAt(0)) + "</div>";
   }
   // Nilai 1 stat (0-100) dari lore.
@@ -302,8 +306,52 @@
   }
   var rollTimers = [];
   var rollSeq = 0;
-  function prefersReducedMotion() {
+  // ---------------- EFEK ANIMASI (v4.9.3) ----------------
+  // save.anim: "auto" = ikut Windows; "on" = efek penuh walau Windows
+  // reduce-motion; "off" = efek ringan (reveal bertahap, tanpa spin/shake/flash).
+  function osPrefersReducedMotion() {
     return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+  function isReducedMotion() {
+    if (save.anim === "on") return false;
+    if (save.anim === "off") return true;
+    return osPrefersReducedMotion();
+  }
+  function applyMotionPref() {
+    if (document.body && document.body.classList) document.body.classList.toggle("reduce-motion", isReducedMotion());
+    var b = $("motionBanner");
+    if (b) {
+      var show = save.anim === "auto" && osPrefersReducedMotion() && !save.motionBannerDismissed;
+      b.classList.toggle("hidden", !show);
+    }
+  }
+  function renderAnimUI() {
+    var btn = $("animToggleBtn");
+    if (btn) btn.textContent = save.anim === "on" ? "ON" : (save.anim === "off" ? "OFF" : "AUTO");
+  }
+  // Gambar roll di-preload supaya langkah 55-70ms tidak blank (Kitsu dsb.
+  // belum tentu di-cache browser). Dijaga: headless/sim tidak punya Image.
+  function preloadChars(list) {
+    if (typeof Image === "undefined") return;
+    (list || []).forEach(function (c) {
+      if (c && c.img) { var im = new Image(); im.src = c.img; }
+    });
+  }
+  function prewarmRollImages() {
+    preloadChars(CHARACTERS.slice(0, 24));
+  }
+  // Pilih decoy roll: tidak ada dua gambar berurutan yang sama, dan decoy
+  // terakhir bukan gambar kartu yang akan mendarat.
+  function pickDecoys(n, notImg) {
+    var list = [], lastImg = null, guard = 0;
+    while (list.length < n && guard++ < 300) {
+      var c = randomSpinChar();
+      if (!c || !c.img) continue;
+      if (c.img === lastImg) continue;
+      if (list.length === n - 1 && notImg && c.img === notImg) continue;
+      list.push(c); lastImg = c.img;
+    }
+    return list;
   }
   function clearRollScene() {
     rollSeq++;
@@ -330,7 +378,7 @@
   }
   function vsSpinCardHtml(c) {
     return '<div class="vs-card-wrap vs-spin"><button class="card" type="button" tabindex="-1">' +
-      imgHtml(c) +
+      imgHtml(c, "", true) +
       '<div class="card-body"><div class="rarity-tag">ROLLING...</div>' +
       '<div class="card-name">' + esc(c.name) + "</div>" +
       '<div class="card-anime">' + esc(c.anime) + "</div>" +
@@ -351,50 +399,85 @@
     if (nm) nm.textContent = ch.name;
     var an = sideEl.querySelector(".card-anime");
     if (an) an.textContent = ch.anime;
+    // Restart animasi tick di tiap langkah (reflow paksa) supaya gerakannya
+    // kelihatan, bukan cuma gambarnya yang ganti.
+    var w = sideEl.querySelector(".vs-card-wrap");
+    if (w && w.classList) {
+      w.classList.remove("tick");
+      void w.offsetWidth;
+      w.classList.add("tick");
+    }
   }
+  // v4.9.3: kurva ease-out — burst cepat lalu rem yang kebaca, total ~1.4 dtk.
+  var ROLL_STEPS = [55, 58, 62, 68, 76, 88, 110, 145, 195, 270];
+  var ROLL_OPP_LAG_MS = 220; // BOT mendarat setelah LO
+  var RARE_PAUSE_MS = 160; // jeda suspense sebelum kartu langka mendarat
   function startRollScene(onDone) {
     clearRollScene();
     if (!match || match.over || !match.roll) return;
-    if (prefersReducedMotion()) {
-      match.rolling = false;
+    var mySeq = rollSeq;
+    var myChar = match.online ? match.pair[match.mySide] : match.pair[match.turn];
+    var oppChar = match.online ? match.pair[match.oppSide] : match.pair[match.turn === "a" ? "b" : "a"];
+    // Reduced motion: JANGAN skip diam-diam seperti v4.9.2. Reveal bertahap
+    // ~320ms (LO dulu, BOT 160ms kemudian) supaya tetap kelihatan ada event.
+    if (isReducedMotion()) {
+      match.rolling = true;
       renderMatch("landed");
-      if (onDone) onDone();
+      var rc0 = $("rollCard");
+      var sides0 = rc0 ? rc0.querySelectorAll(".vs-side") : [];
+      if (sides0[1]) sides0[1].style.visibility = "hidden";
+      rollTimers.push(setTimeout(function () {
+        if (!match || match.over || rollSeq !== mySeq) return;
+        if (sides0[1]) sides0[1].style.visibility = "visible";
+        match.rolling = false;
+        if (rc0) rc0.setAttribute("data-roll-key", myChar.id + "|" + oppChar.id);
+        syncMatchControls();
+        if (onDone) onDone();
+      }, 320));
       return;
     }
-    var mySeq = rollSeq;
     match.rolling = true;
     renderMatch("spin");
+    if (!match.online) {
+      var tl = $("timerLabel");
+      if (tl) { tl.textContent = "ROLLING..."; tl.classList.remove("timer-danger"); }
+    }
     var rc = $("rollCard");
     var sides = rc ? rc.querySelectorAll(".vs-side") : [];
     var leftSide = sides[0], rightSide = sides[1];
-    var myChar = match.online ? match.pair[match.mySide] : match.pair[match.turn];
-    var oppChar = match.online ? match.pair[match.oppSide] : match.pair[match.turn === "a" ? "b" : "a"];
     var myLabel = leftSide ? (leftSide.querySelector(".vs-side-label") && leftSide.querySelector(".vs-side-label").textContent) || "LO" : "LO";
     var oppLabel = rightSide ? (rightSide.querySelector(".vs-side-label") && rightSide.querySelector(".vs-side-label").textContent) || "BOT" : "BOT";
-    var steps = [70, 75, 80, 85, 95, 105, 115, 125, 135, 145, 155, 160]; // sum = 1240ms
+    var leftDecoys = pickDecoys(ROLL_STEPS.length, myChar.img);
+    var rightDecoys = pickDecoys(ROLL_STEPS.length, oppChar.img);
+    preloadChars(leftDecoys.concat(rightDecoys).concat([myChar, oppChar]));
+    var rareMy = isHighRarity(myChar) ? RARE_PAUSE_MS : 0;
+    var rareOpp = isHighRarity(oppChar) ? RARE_PAUSE_MS : 0;
     var elapsed = 0;
-    for (var i = 0; i < steps.length; i++) {
-      elapsed += steps[i];
-      (function (t, isLastLeft) {
+    for (var i = 0; i < ROLL_STEPS.length; i++) {
+      elapsed += ROLL_STEPS[i];
+      (function (idx, t) {
         rollTimers.push(setTimeout(function () {
           if (!match || match.over || rollSeq !== mySeq) return;
-          if (isLastLeft) {
+          if (idx === ROLL_STEPS.length - 1) {
+            // Langkah terakhir = LO mendarat (jeda rare bila langka).
             if (leftSide) leftSide.innerHTML = '<div class="vs-side-label">' + esc(myLabel) + "</div>" + vsCardWrapHtml(myChar, true);
             sfx.pop();
             if (isHighRarity(myChar)) sfx.levelup();
-            if (rightSide) updateSpinSide(rightSide, randomSpinChar());
+            if (rightSide && rightDecoys[idx]) updateSpinSide(rightSide, rightDecoys[idx]);
           } else {
-            if (leftSide) updateSpinSide(leftSide, randomSpinChar());
-            if (rightSide) updateSpinSide(rightSide, randomSpinChar());
+            sfx.rollTick(idx);
+            if (leftSide && leftDecoys[idx]) updateSpinSide(leftSide, leftDecoys[idx]);
+            if (rightSide && rightDecoys[idx]) updateSpinSide(rightSide, rightDecoys[idx]);
           }
-        }, t));
-      })(elapsed, i === steps.length - 1);
+        }, t + (idx === ROLL_STEPS.length - 1 ? rareMy : 0)));
+      })(i, elapsed);
     }
-    // 1 extra tick for opponent card, landing ~200ms after LO (at 1440ms)
+    var landT = elapsed + rareMy;
+    // 1 tick ekstra buat sisi lawan, lalu BOT mendarat ~220ms setelah LO.
     rollTimers.push(setTimeout(function () {
       if (!match || match.over || rollSeq !== mySeq) return;
-      if (rightSide) updateSpinSide(rightSide, randomSpinChar());
-    }, elapsed + 110));
+      if (rightSide && rightDecoys[ROLL_STEPS.length - 1]) updateSpinSide(rightSide, rightDecoys[ROLL_STEPS.length - 1]);
+    }, landT + 110));
     rollTimers.push(setTimeout(function () {
       if (!match || match.over || rollSeq !== mySeq) return;
       if (rightSide) rightSide.innerHTML = '<div class="vs-side-label">' + esc(oppLabel) + "</div>" + vsCardWrapHtml(oppChar, true);
@@ -406,7 +489,7 @@
       if (rc) rc.setAttribute("data-roll-key", myChar.id + "|" + oppChar.id);
       syncMatchControls();
       if (onDone) onDone();
-    }, elapsed + 200));
+    }, landT + ROLL_OPP_LAG_MS + rareOpp));
   }
   function beginTurn(side) {
     match.turn = side;
@@ -422,6 +505,11 @@
   }
   function startTimer() {
     stopTimer();
+    var t0 = $("timerLabel");
+    if (t0) { // v4.9.3: label langsung, jangan nunggu tick pertama (1 dtk).
+      t0.textContent = "Waktu: " + match.timeLeft + " dtk";
+      if (match.timeLeft <= 5) t0.classList.add("timer-danger"); else t0.classList.remove("timer-danger");
+    }
     match.timerId = setInterval(function () {
       if (!match || match.over) { stopTimer(); return; }
       if (match.online) {
@@ -559,9 +647,16 @@
     SLOT_DEFS.forEach(function (d) {
       var id = oppParts[d.key];
       var c = id ? charById(id) : null;
-      html += '<div class="opp-row"><span class="opp-label">' + d.label + '</span>' +
-        (c ? imgHtml(c) + '<span class="opp-name">' + esc(c.name) + '</span><span class="opp-val">' + statOf(c, d.key) + '</span>' :
-          '<span class="opp-empty">— menunggu —</span>') +
+      // v4.9.3: struktur sama persis dengan slot lo (thumb + label/nama/jurus
+      // + chip nilai) supaya baris kiri-kanan sejajar & sama tinggi.
+      html += '<div class="opp-row">' +
+        (c ? imgHtml(c) +
+          '<span class="opp-info"><span class="opp-label">' + d.label + '</span>' +
+          '<span class="opp-name">' + esc(c.name) + '</span>' +
+          '<span class="opp-move">' + esc(c.move) + '</span></span>' +
+          '<span class="opp-val">' + statOf(c, d.key) + '</span>' :
+          '<span class="opp-info"><span class="opp-label">' + d.label + '</span>' +
+          '<span class="opp-empty">— menunggu —</span></span>') +
         "</div>";
     });
     $("oppPanel").innerHTML = html;
@@ -726,7 +821,7 @@
       var v = c ? statOf(c, d.key) : 0;
       var ov = oc ? statOf(oc, d.key) : 0;
       var cmpCls = v > ov ? " sd-mini-win" : (v < ov ? " sd-mini-lose" : " sd-mini-draw");
-      var delay = (baseIdx + i) * 70;
+      var delay = (baseIdx + i) * 35; // v4.9.3: fly-in 0-~500ms, stagger 35ms/baris
       cards += '<div class="sd-mini' + cmpCls + '" style="animation-delay:' + delay + 'ms">' +
         (c ? imgHtml(c) : '<div class="img-fallback" style="background:#FFF6E5">?</div>') +
         '<div class="sd-mini-slot">' + esc(d.label) + '</div>' +
@@ -741,7 +836,6 @@
   }
   function sdRevealHtml(winner) {
     return '<div class="sd-reveal">' +
-      '<div class="sd-clash-flash"></div>' +
       sdRevealGroupHtml("TIM LO", showdown.a, showdown.b, winner === "A", winner === "B", 0, "sd-team-left") +
       sdRevealGroupHtml("LAWAN", showdown.b, showdown.a, winner === "B", winner === "A", 5, "sd-team-right") +
       '</div>';
@@ -749,6 +843,7 @@
   $("showdownBtn").addEventListener("click", function () {
     if (!showdown || showdown.over) return;
     sfx.click();
+    $("showdownBtn").disabled = true; // kunci langsung — jangan nunggu reveal
     showdown.revealed = true;
     showdown.over = true;
     var rev = showdown.reverse;
@@ -769,19 +864,30 @@
       msg = "KALAH. " + a.avg.toFixed(1) + " vs " + b.avg.toFixed(1) + ". +15 Cash.";
       if (showdown.mode === "bot" || showdown.mode === "online") save.cash += LOSE_REWARD;
     }
-    if (prefersReducedMotion()) {
+    // v4.9.3 koreografi clash: fly-in 0-~500ms, hitstop 500-560ms,
+    // impak 560-880ms (flash layar penuh + shake + punch), reveal 940ms.
+    if (isReducedMotion()) {
       sfx.pop();
       if (winner === "draw") sfx.draw();
       else if (winner === "A") { sfx.win(); sfx.coin(); }
       else sfx.lose();
     } else {
-      setTimeout(function () { if (showdown && showdown.over) sfx.pop(); }, 650);
+      setTimeout(function () {
+        if (!showdown || !showdown.over) return;
+        sfx.punch();
+        var cf = $("clashFlash");
+        if (cf && cf.classList) {
+          cf.classList.remove("active");
+          void cf.offsetWidth;
+          cf.classList.add("active");
+        }
+      }, 560);
       setTimeout(function () {
         if (!showdown || !showdown.over) return;
         if (winner === "draw") sfx.draw();
         else if (winner === "A") { sfx.win(); sfx.coin(); }
         else sfx.lose();
-      }, 700);
+      }, 940);
     }
     if (showdown.mode === "bot" || showdown.mode === "online") save.battles++;
     persist();
@@ -861,6 +967,22 @@
     if (soundOn) sfx.click();
   });
 
+  // v4.9.3: toggle efek animasi (AUTO -> ON -> OFF) + banner 1-klik.
+  var animBtn = $("animToggleBtn");
+  if (animBtn) animBtn.addEventListener("click", function () {
+    save.anim = save.anim === "auto" ? "on" : (save.anim === "on" ? "off" : "auto");
+    persist(); applyMotionPref(); renderAnimUI(); sfx.click();
+  });
+  var enableAnimBtn = $("enableAnimBtn");
+  if (enableAnimBtn) enableAnimBtn.addEventListener("click", function () {
+    save.anim = "on"; persist(); applyMotionPref(); renderAnimUI(); sfx.click();
+    toast("Efek penuh aktif — roll & clash sekarang jalan.");
+  });
+  var dismissAnimBtn = $("dismissAnimBannerBtn");
+  if (dismissAnimBtn) dismissAnimBtn.addEventListener("click", function () {
+    save.motionBannerDismissed = true; persist(); applyMotionPref();
+  });
+
   // ---------------- ONLINE 1v1 (PeerJS) ----------------
   var onlineLeaving = false; // true kalau KITA yang keluar (bukan lawan)
   function onlineIsHost() { return match && match.online && window.AFOnline && AFOnline.isHost; }
@@ -879,7 +1001,7 @@
     var pa = rollUnique(match.a, []);
     var pb = rollUnique(match.b, [pa.id]);
     match.pair = { a: pa, b: pb };
-    match.endsAt = Date.now() + (ROUND_TIME_MIN + Math.floor(Math.random() * (ROUND_TIME_MAX - ROUND_TIME_MIN + 1))) * 1000;
+    match.endsAt = Date.now() + (ROUND_TIME_MIN + Math.floor(Math.random() * (ROUND_TIME_MAX - ROUND_TIME_MIN + 1))) * 1000 + ROLL_BUFFER_MS;
     match.myPlaced = false;
     match.oppPlaced = false;
     AFOnline.send({ t: "round", n: match.round, reverse: match.reverse, pair: { a: pa.id, b: pb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
@@ -1020,6 +1142,7 @@
         var rpa = rollUnique(match.a, []);
         var rpb = rollUnique(match.b, [rpa.id]);
         match.pair = { a: rpa, b: rpb };
+        match.endsAt += ROLL_BUFFER_MS; // v4.9.3: roll reroll juga tidak makan timer
         AFOnline.send({ t: "round", n: match.round, reverse: match.reverse, pair: { a: rpa.id, b: rpb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
         match.roll = match.pair[match.mySide];
         renderMatch();
@@ -1501,6 +1624,8 @@
     if (resetBtn) resetBtn.addEventListener("click", function () {
       var d = defaultSave();
       save.music = d.music; save.bg = d.bg;
+      save.anim = d.anim; save.motionBannerDismissed = d.motionBannerDismissed;
+      applyMotionPref(); renderAnimUI();
       bgmCustomBlobUrl = null; bgmCustomIsUrl = false; bgCustomBlobUrl = null;
       persist(); renderMusicUI(); renderBgUI(); applyBg(); bgmApply();
       toast("Pengaturan direset.");
@@ -1547,6 +1672,9 @@
     mp.insertBefore(cols, back);
   })();
   settingsInit(); // v4.6: modal pengaturan + musik latar + background
+  applyMotionPref(); // v4.9.3: gate efek animasi (ikut Windows / toggle)
+  renderAnimUI();
+  prewarmRollImages(); // v4.9.3: gambar roll di-cache dulu supaya tidak blank
   $("galleryCount").textContent = "(" + CHARACTERS.length + ")";
   onlineSetupHandlers();
   if (typeof Peer === "undefined") {

@@ -44,6 +44,11 @@
   <!-- ============ TAB BATTLE (SHOWDOWN) ============ -->
   <section id="tab-battle" class="tabpage">
     <div class="panel">
+      <div id="motionBanner" class="motion-banner hidden">
+        <span>Efek animasi dibatasi (ikut pengaturan Windows).</span>
+        <button id="enableAnimBtn" class="btn btn-small">AKTIFKAN EFEK PENUH</button>
+        <button id="dismissAnimBannerBtn" class="btn btn-gray btn-small">NANTI</button>
+      </div>
       <div class="battle-intro">
         <h2>SHOWDOWN</h2>
         <p class="hint">Match dimulai, baru bangun fighter — tiap ronde gacha 1 karakter, lo yang pilih masuk slot mana. 5 ronde, terus SHOWDOWN adu rata-rata stat, kayak di Roblox-nya.</p>
@@ -136,6 +141,10 @@
       <button id="soundBtn" class="btn btn-small">Suara: ON</button>
     </div>
     <div class="setting-row">
+      <span class="setting-label">Efek animasi</span>
+      <button id="animToggleBtn" class="btn btn-small">AUTO</button>
+    </div>
+    <div class="setting-row">
       <span class="setting-label">Musik</span>
       <button id="musicToggleBtn" class="btn btn-small">ON</button>
     </div>
@@ -170,6 +179,7 @@
   </div>
 </div>
 
+<div id="clashFlash" class="clash-flash"></div>
 <div id="toast" class="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
