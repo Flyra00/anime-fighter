@@ -60,6 +60,13 @@
       else for (var mk in d.music) if (s.music[mk] === undefined) s.music[mk] = d.music[mk];
       if (!s.bg || typeof s.bg !== "object") s.bg = d.bg;
       else for (var bk in d.bg) if (s.bg[bk] === undefined) s.bg[bk] = d.bg[bk];
+      // v4.7.1: migrasi satu kali — save lama yang masih di default lama
+      // ("malam") pindah ke default baru ("jojo"). Flag mencegah save yang
+      // sengaja memilih "malam" ikut kepindah di load berikutnya.
+      if (s.bg && typeof s.bg === "object" && !s.bg.v47migrated) {
+        s.bg.v47migrated = true;
+        if (s.bg.preset === "malam") s.bg.preset = "jojo";
+      }
       return s;
     } catch (e) { return defaultSave(); }
   }
@@ -1167,7 +1174,7 @@
     for (var j = 0; j < BG_PRESETS.length; j++) {
       var p = BG_PRESETS[j];
       var style = p.img
-        ? 'background-image:url("' + p.img + '")'
+        ? "background-image:url('" + p.img + "')" // v4.7.1: kutip tunggal — kutip ganda di dalam atribut style="..." merusak HTML (swatch blank putih)
         : p.collage
         ? "background:linear-gradient(135deg,#3b82f6 0%,#aa50ff 33%,#ff2d78 66%,#ffb400 100%)"
         : "background:" + p.css;
