@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Anime Fighter — Roll, Build, Showdown!</title>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -29,7 +29,7 @@
     <div class="panel">
       <h2>CARA MAIN</h2>
       <ol class="rules-list">
-        <li>Buka tab BATTLE, tap SHOWDOWN VS BOT atau DUEL TEMAN.</li>
+        <li>Buka tab BATTLE, pilih SHOWDOWN VS BOT, DUEL TEMAN, atau 1VS1 ONLINE.</li>
         <li>Tiap ronde, lo dan lawan gacha 1 karakter — ditampilin berdua kayak VS, live kayak di Roblox.</li>
         <li>Lo pilih sendiri karakter lo masuk slot mana: Kekuatan, Kecepatan, Kemampuan, Kepintaran, atau Ketahanan. Satu karakter cuma bisa isi satu slot. Lawan juga masang karakternya di saat yang sama — keliatan live di panel lawan.</li>
         <li>Stat angka (STR, SPD, ABI, IQ, DUR) tampil di kartu dan tiap slot selama match — pakai angkanya buat milih slot terbaik!</li>
@@ -149,12 +149,20 @@
       <label class="btn btn-purple btn-small file-btn">UPLOAD MP3<input id="musicUploadInput" type="file" accept="audio/mpeg,audio/mp3,audio/*" hidden></label>
       <button id="musicUrlBtn" class="btn btn-blue btn-small">TEMPEL URL MP3</button>
     </div>
+    <div id="musicUrlRow" class="setting-url-row hidden">
+      <input id="musicUrlInput" type="url" placeholder="https://.../lagu.mp3">
+      <button id="musicUrlApplyBtn" class="btn btn-blue btn-small">PASANG</button>
+    </div>
     <p class="hint" id="musicStatus">Overtaken — One Piece</p>
     <h3>LATAR BELAKANG</h3>
     <div id="bgSwatches" class="bg-swatches"></div>
     <div class="setting-row">
       <button id="bgUrlBtn" class="btn btn-blue btn-small">TEMPEL URL GAMBAR</button>
       <label class="btn btn-purple btn-small file-btn">UPLOAD GAMBAR<input id="bgUploadInput" type="file" accept="image/*" hidden></label>
+    </div>
+    <div id="bgUrlRow" class="setting-url-row hidden">
+      <input id="bgUrlInput" type="url" placeholder="https://.../wallpaper.jpg">
+      <button id="bgUrlApplyBtn" class="btn btn-blue btn-small">PASANG</button>
     </div>
     <p class="hint" id="bgStatus">JoJo Duel</p>
     <p class="hint">Artwork: JoJo Duel — fan art Pixiv ID 369216; Gojo / Goku / Tanjiro — art resmi Kitsu.</p>

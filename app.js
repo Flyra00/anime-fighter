@@ -203,6 +203,7 @@
       '<div class="card-stats">' + statLine(c) + '</div>' +
       "</div></button>";
   }
+  var galleryDirty = true;
   function renderGallery() {
     var q = ($("gallerySearch").value || "").toLowerCase();
     var f = $("galleryFilter").value;
@@ -213,8 +214,14 @@
     });
     $("galleryGrid").innerHTML = list.map(function (c) { return cardHtml(c, false); }).join("") ||
       '<p class="hint">Tidak ketemu. Coba kata lain.</p>';
+    galleryDirty = false;
   }
-  function renderAll() { renderBadges(); renderGallery(); if (match && !match.over) renderMatch(); }
+  function renderAll() {
+    renderBadges();
+    var galTab = $("tab-gallery");
+    if (galTab && galTab.classList.contains("active")) renderGallery();
+    if (match && !match.over) renderMatch();
+  }
 
   // ---------------- MATCH: 5 RONDE (gacha + pasang sendiri) ----------------
   function emptyParts() { return { str: null, spd: null, abi: null, iq: null, dur: null }; }
@@ -262,7 +269,6 @@
       oppSide: (mode === "online" && window.AFOnline) ? (AFOnline.isHost ? "b" : "a") : "b",
       myPlaced: false, oppPlaced: false, endsAt: 0, startedAt: Date.now()
     };
-    save.battles++; persist();
     showdown = null;
     $("battleMenu").classList.add("hidden");
     $("roomPanel").classList.add("hidden");
@@ -385,7 +391,7 @@
         var pa = rollUnique(match.a, []);
         var pb = rollUnique(match.b, [pa.id]);
         match.pair = { a: pa, b: pb };
-        AFOnline.send({ t: "round", n: match.round, pair: { a: pa.id, b: pb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
+        AFOnline.send({ t: "round", n: match.round, reverse: match.reverse, pair: { a: pa.id, b: pb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
         match.roll = match.pair[match.mySide];
         sfx.reroll();
         renderBadges();
@@ -432,7 +438,7 @@
       oppName = "BOT";
     } else {
       oppParts = match.turn === "a" ? match.b : match.a;
-      oppName = "TEMAN";
+      oppName = match.turn === "a" ? "TEMAN" : "LO";
     }
     $("oppTitle").textContent = "LAWAN (" + oppName + ") — LIVE";
     var html = "";
@@ -596,6 +602,7 @@
       if (showdown.mode === "bot" || showdown.mode === "online") save.cash += LOSE_REWARD;
       sfx.lose();
     }
+    if (showdown.mode === "bot" || showdown.mode === "online") save.battles++;
     persist();
     var rematchHtml = "";
     if (showdown.mode === "bot") rematchHtml = '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (BOT BARU)</button>';
@@ -614,15 +621,19 @@
   function closeMatchUI(quiet) {
     sfx.click();
     stopTimer();
-    if (match && match.online && !quiet && window.AFOnline) { onlineLeaving = true; AFOnline.leave(); }
+    var isOnline = (match && match.online) || (showdown && showdown.mode === "online");
+    if (isOnline && !quiet && window.AFOnline) { onlineLeaving = true; AFOnline.leave(); }
     match = null;
     showdown = null;
     $("arena").classList.add("hidden");
     $("matchPanel").classList.add("hidden");
     $("battleMenu").classList.remove("hidden");
   }
-  $("backBtn").addEventListener("click", closeMatchUI);
-  $("matchBackBtn").addEventListener("click", closeMatchUI);
+  $("backBtn").addEventListener("click", function () { closeMatchUI(); });
+  $("matchBackBtn").addEventListener("click", function () {
+    if (match && !match.over && !confirm("Keluar dari match yang sedang berjalan?")) return;
+    closeMatchUI();
+  });
   $("botBtn").addEventListener("click", function () { startMatch("bot"); });
   $("duelBtn").addEventListener("click", function () { startMatch("duel"); });
   $("rerollBtn").addEventListener("click", function () {
@@ -639,7 +650,9 @@
       document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
       document.querySelectorAll(".tabpage").forEach(function (p) { p.classList.remove("active"); });
       tab.classList.add("active");
-      $("tab-" + tab.getAttribute("data-tab")).classList.add("active");
+      var tabId = tab.getAttribute("data-tab");
+      $("tab-" + tabId).classList.add("active");
+      if (tabId === "gallery" && galleryDirty) renderGallery();
     });
   });
   $("soundBtn").addEventListener("click", function () {
@@ -668,7 +681,7 @@
     match.endsAt = Date.now() + (ROUND_TIME_MIN + Math.floor(Math.random() * (ROUND_TIME_MAX - ROUND_TIME_MIN + 1))) * 1000;
     match.myPlaced = false;
     match.oppPlaced = false;
-    AFOnline.send({ t: "round", n: match.round, pair: { a: pa.id, b: pb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
+    AFOnline.send({ t: "round", n: match.round, reverse: match.reverse, pair: { a: pa.id, b: pb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
     beginTurn(match.mySide);
   }
 
@@ -677,6 +690,7 @@
     if (!match) startMatch("online"); // rejoin tengah match
     if (!match || match.over) return;
     if (msg.n !== match.round && msg.n !== match.round + 1) return; // ronde basi
+    match.reverse = !!msg.reverse;
     var oldPairA = match.pair.a ? match.pair.a.id : null;
     match.round = msg.n;
     match.pair = { a: charById(msg.pair.a), b: charById(msg.pair.b) };
@@ -761,7 +775,7 @@
         var inMatch = !!(match && !match.over && match.pair && match.pair.a);
         if (inMatch) {
           AFOnline.send({ t: "welcome", name: AFOnline.myName, inMatch: true,
-            round: { n: match.round, pair: { a: match.pair.a.id, b: match.pair.b.id }, endsAt: match.endsAt, a: match.a, b: match.b } });
+            round: { n: match.round, reverse: match.reverse, pair: { a: match.pair.a.id, b: match.pair.b.id }, endsAt: match.endsAt, a: match.a, b: match.b } });
         } else {
           AFOnline.send({ t: "welcome", name: AFOnline.myName, inMatch: false });
         }
@@ -778,6 +792,7 @@
         break;
       case "start": // tamu: host mulai
         startMatch("online");
+        match.reverse = !!msg.reverse;
         $("roomPanel").classList.add("hidden");
         break;
       case "round":
@@ -798,13 +813,13 @@
         if (!match || match.over || !onlineIsHost()) break;
         if (match.myPlaced || match.oppPlaced) {
           // Sudah ada yang pasang: kirim ronde sekarang (pair sama) biar tamu batal.
-          AFOnline.send({ t: "round", n: match.round, pair: { a: match.pair.a.id, b: match.pair.b.id }, endsAt: match.endsAt, a: match.a, b: match.b });
+          AFOnline.send({ t: "round", n: match.round, reverse: match.reverse, pair: { a: match.pair.a.id, b: match.pair.b.id }, endsAt: match.endsAt, a: match.a, b: match.b });
           break;
         }
         var rpa = rollUnique(match.a, []);
         var rpb = rollUnique(match.b, [rpa.id]);
         match.pair = { a: rpa, b: rpb };
-        AFOnline.send({ t: "round", n: match.round, pair: { a: rpa.id, b: rpb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
+        AFOnline.send({ t: "round", n: match.round, reverse: match.reverse, pair: { a: rpa.id, b: rpb.id }, endsAt: match.endsAt, a: match.a, b: match.b });
         match.roll = match.pair[match.mySide];
         renderMatch();
         break;
@@ -965,7 +980,7 @@
     if (!window.AFOnline || !AFOnline.connected) { toast("Belum ada lawan di room."); return; }
     $("roomPanel").classList.add("hidden");
     startMatch("online");
-    AFOnline.send({ t: "start" });
+    AFOnline.send({ t: "start", reverse: match.reverse });
     onlineBeginRound();
   });
   $("leaveRoomBtn").addEventListener("click", function () {
@@ -1044,7 +1059,7 @@
     try {
       bgmAudio = new Audio();
       bgmAudio.loop = true;
-      bgmAudio.preload = "auto";
+      bgmAudio.preload = "metadata";
       bgmAudio.addEventListener("error", function () {
         if (save.music.track === "custom") {
           toast("Musik custom gagal dimuat — balik ke Overtaken.");
@@ -1210,7 +1225,9 @@
     });
     var vol = $("musicVol");
     if (vol) vol.addEventListener("input", function () {
-      save.music.vol = parseInt(vol.value, 10) || 0; persist(); renderMusicUI(); bgmApply();
+      save.music.vol = parseInt(vol.value, 10) || 0;
+      var vl = $("musicVolLabel"); if (vl) vl.textContent = save.music.vol + "%";
+      persist(); bgmApply();
     });
     var up = $("musicUploadInput");
     if (up) up.addEventListener("change", function () {
@@ -1225,16 +1242,24 @@
       });
     });
     var urlBtn = $("musicUrlBtn");
-    if (urlBtn) urlBtn.addEventListener("click", function () {
-      var u = prompt("Tempel URL MP3 (mis. https://.../lagu.mp3):", save.music.url || "");
-      if (!u) return;
-      u = u.trim();
+    var musicUrlRow = $("musicUrlRow");
+    var musicUrlInput = $("musicUrlInput");
+    var musicUrlApplyBtn = $("musicUrlApplyBtn");
+    function applyMusicUrl() {
+      var u = (musicUrlInput && musicUrlInput.value || "").trim();
       if (!/^https?:\/\/.+/i.test(u)) { toast("URL harus diawali http:// atau https://"); return; }
       bgmCustomBlobUrl = null; bgmCustomIsUrl = true;
       save.music.track = "custom"; save.music.url = u;
+      if (musicUrlRow) musicUrlRow.classList.add("hidden");
       persist(); renderMusicUI(); bgmApply();
       toast("Backsound dari URL — kalau gagal dimuat, balik ke Overtaken.");
+    }
+    if (urlBtn && musicUrlRow) urlBtn.addEventListener("click", function () {
+      var open = musicUrlRow.classList.toggle("hidden") === false;
+      if (open && musicUrlInput) { musicUrlInput.value = save.music.url || ""; musicUrlInput.focus(); }
     });
+    if (musicUrlApplyBtn) musicUrlApplyBtn.addEventListener("click", applyMusicUrl);
+    if (musicUrlInput) musicUrlInput.addEventListener("keydown", function (e) { if (e.key === "Enter") applyMusicUrl(); });
     var bgUp = $("bgUploadInput");
     if (bgUp) bgUp.addEventListener("change", function () {
       var f = bgUp.files && bgUp.files[0]; bgUp.value = "";
@@ -1248,21 +1273,29 @@
       });
     });
     var bgUrlBtn = $("bgUrlBtn");
-    if (bgUrlBtn) bgUrlBtn.addEventListener("click", function () {
-      var u = prompt("Tempel URL gambar (mis. https://.../wallpaper.jpg):", save.bg.url || "");
-      if (!u) return;
-      u = u.trim();
+    var bgUrlRow = $("bgUrlRow");
+    var bgUrlInput = $("bgUrlInput");
+    var bgUrlApplyBtn = $("bgUrlApplyBtn");
+    function applyBgUrl() {
+      var u = (bgUrlInput && bgUrlInput.value || "").trim();
       if (!/^https?:\/\/.+/i.test(u)) { toast("URL harus diawali http:// atau https://"); return; }
       var img = new Image();
       img.onload = function () {
         bgCustomBlobUrl = null;
         save.bg.preset = "custom"; save.bg.url = u;
+        if (bgUrlRow) bgUrlRow.classList.add("hidden");
         persist(); renderBgUI(); applyBg();
         toast("Background dari URL terpasang.");
       };
       img.onerror = function () { toast("Gagal muat gambar — cek URL."); };
       img.src = u;
+    }
+    if (bgUrlBtn && bgUrlRow) bgUrlBtn.addEventListener("click", function () {
+      var open = bgUrlRow.classList.toggle("hidden") === false;
+      if (open && bgUrlInput) { bgUrlInput.value = save.bg.url || ""; bgUrlInput.focus(); }
     });
+    if (bgUrlApplyBtn) bgUrlApplyBtn.addEventListener("click", applyBgUrl);
+    if (bgUrlInput) bgUrlInput.addEventListener("keydown", function (e) { if (e.key === "Enter") applyBgUrl(); });
     var resetBtn = $("settingsResetBtn");
     if (resetBtn) resetBtn.addEventListener("click", function () {
       var d = defaultSave();

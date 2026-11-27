@@ -1,0 +1,1542 @@
+[
+  {
+    "id": "goku",
+    "name": "Goku",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/4119/original.jpg",
+    "kitsu_id": 4119,
+    "mean": 105.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "vegeta",
+    "name": "Vegeta",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/4196/original.jpg",
+    "kitsu_id": 4196,
+    "mean": 128.3,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "gohan",
+    "name": "Gohan",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/4231/original.jpg",
+    "kitsu_id": 4231,
+    "mean": 116.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "piccolo",
+    "name": "Piccolo",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/4121/original.jpg",
+    "kitsu_id": 4121,
+    "mean": 103.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "krillin",
+    "name": "Krillin",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/4115/original.jpg",
+    "kitsu_id": 4115,
+    "mean": 178.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "frieza",
+    "name": "Frieza",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/4209/original.jpg",
+    "kitsu_id": 4209,
+    "mean": 113.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "cell",
+    "name": "Cell",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/4210/original.jpg",
+    "kitsu_id": 4210,
+    "mean": 139.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "broly",
+    "name": "Broly",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/11304/original.jpg",
+    "kitsu_id": 11304,
+    "mean": 177.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "beerus",
+    "name": "Beerus",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/37889/original.jpg",
+    "kitsu_id": 37889,
+    "mean": 110.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "jiren",
+    "name": "Jiren",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/95670/original.jpg",
+    "kitsu_id": 95670,
+    "mean": 89.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "goku_black",
+    "name": "Goku Black",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/64903/original.jpg",
+    "kitsu_id": 64903,
+    "mean": 98.3,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "goku_ui",
+    "name": "Goku (Ultra Instinct)",
+    "anime": "Dragon Ball",
+    "url": "https://static.wikia.nocookie.net/dragonball/images/b/b9/Ultra_Instinct_Goku.png",
+    "kitsu_id": null,
+    "mean": 163.4,
+    "status": "GANTI",
+    "catatan": "GANTI (varian sebelumnya berbagi Kitsu #4119 base Goku; diganti potret resmi DBS Ultra Instinct rambut perak; URL dasar Wiki tanpa suffix)"
+  },
+  {
+    "id": "goku_ssj",
+    "name": "Goku (Super Saiyan)",
+    "anime": "Dragon Ball",
+    "url": "https://static.wikia.nocookie.net/dragonball/images/9/95/Super_Saiyan_Goku_%28Kai%29.png",
+    "kitsu_id": null,
+    "mean": 184.5,
+    "status": "GANTI",
+    "catatan": "GANTI (varian sebelumnya berbagi Kitsu #4119 base Goku; diganti potret resmi DBZ Kai Super Saiyan rambut pirang; URL dasar Wiki tanpa suffix)"
+  },
+  {
+    "id": "naruto",
+    "name": "Naruto",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/221/original.jpg",
+    "kitsu_id": 221,
+    "mean": 137.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "sasuke",
+    "name": "Sasuke",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/220/original.jpg",
+    "kitsu_id": 220,
+    "mean": 104.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "sakura",
+    "name": "Sakura",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/218/original.jpg",
+    "kitsu_id": 218,
+    "mean": 127.9,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "kakashi",
+    "name": "Kakashi",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/219/original.jpg",
+    "kitsu_id": 219,
+    "mean": 107.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "rocklee",
+    "name": "Rock Lee",
+    "anime": "Naruto",
+    "url": "images/characters/rocklee.png",
+    "kitsu_id": null,
+    "mean": 120.8,
+    "status": "GANTI",
+    "catatan": "GANTI (lama Kitsu #375 gaya wiki kaku standing pose; diganti bundle lokal dari AniList #306) (https://s4.anilist.co/file/anilistcdn/character/large/b306-oUTOO45xInXt.png)"
+  },
+  {
+    "id": "gaara",
+    "name": "Gaara",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/222/original.jpg",
+    "kitsu_id": 222,
+    "mean": 122.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "jiraiya",
+    "name": "Jiraiya",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/226/original.jpg",
+    "kitsu_id": 226,
+    "mean": 166.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "itachi",
+    "name": "Itachi",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/388/original.jpg",
+    "kitsu_id": 388,
+    "mean": 97.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "pain",
+    "name": "Pain",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/233/original.jpg",
+    "kitsu_id": 233,
+    "mean": 109.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "minato",
+    "name": "Minato",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/371/original.jpg",
+    "kitsu_id": 371,
+    "mean": 157.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "madara",
+    "name": "Madara",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/17955/original.jpg",
+    "kitsu_id": 17955,
+    "mean": 79.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "naruto_sage",
+    "name": "Naruto (Sage Mode)",
+    "anime": "Naruto",
+    "url": "https://static.wikia.nocookie.net/naruto/images/6/6c/Naruto_with_coat.png",
+    "kitsu_id": null,
+    "mean": 42.1,
+    "status": "GANTI",
+    "catatan": "GANTI (varian sebelumnya berbagi Kitsu #221 base Naruto; diganti art anime resmi Sage Mode jubah merah + mata katak; URL dasar Wiki tanpa suffix)"
+  },
+  {
+    "id": "luffy",
+    "name": "Luffy",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/411/original.jpg",
+    "kitsu_id": 411,
+    "mean": 160.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "zoro",
+    "name": "Zoro",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/413/original.jpg",
+    "kitsu_id": 413,
+    "mean": 129.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "sanji",
+    "name": "Sanji",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/407/original.jpg",
+    "kitsu_id": 407,
+    "mean": 177.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "nami",
+    "name": "Nami",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/408/original.jpg",
+    "kitsu_id": 408,
+    "mean": 158.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "usopp",
+    "name": "Usopp",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/409/original.jpg",
+    "kitsu_id": 409,
+    "mean": 144.9,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "robin",
+    "name": "Robin",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/412/original.jpg",
+    "kitsu_id": 412,
+    "mean": 120.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "ace",
+    "name": "Ace",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/885/original.jpg",
+    "kitsu_id": 885,
+    "mean": 146.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "law",
+    "name": "Law",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/864/original.jpg",
+    "kitsu_id": 864,
+    "mean": 135.3,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "mihawk",
+    "name": "Mihawk",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/853/original.jpg",
+    "kitsu_id": 853,
+    "mean": 59.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "shanks",
+    "name": "Shanks",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/416/original.jpg",
+    "kitsu_id": 416,
+    "mean": 125.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "whitebeard",
+    "name": "Whitebeard",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/880/original.jpg",
+    "kitsu_id": 880,
+    "mean": 152.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "kaido",
+    "name": "Kaido",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/41329/original.jpg",
+    "kitsu_id": 41329,
+    "mean": 65.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "luffy_g2",
+    "name": "Luffy (Gear 2)",
+    "anime": "One Piece",
+    "url": "https://static.wikia.nocookie.net/onepiece/images/1/11/Gear_2_Techniques_Infobox.png",
+    "kitsu_id": null,
+    "mean": 174.6,
+    "status": "GANTI",
+    "catatan": "GANTI (varian sebelumnya berbagi Kitsu #411 base Luffy; diganti art berwarna resmi Gear 2 uap & kulit memerah; URL dasar Wiki tanpa suffix)"
+  },
+  {
+    "id": "luffy_g5",
+    "name": "Luffy (Gear 5)",
+    "anime": "One Piece",
+    "url": "https://static.wikia.nocookie.net/onepiece/images/6/66/Gear_5_Infobox.png",
+    "kitsu_id": null,
+    "mean": 91.0,
+    "status": "GANTI",
+    "catatan": "GANTI (varian sebelumnya berbagi Kitsu #411 base Luffy; diganti art anime resmi Gear 5 rambut putih & awan; URL dasar Wiki tanpa suffix)"
+  },
+  {
+    "id": "ichigo",
+    "name": "Ichigo",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5451/original.jpg",
+    "kitsu_id": 5451,
+    "mean": 113.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "rukia",
+    "name": "Rukia",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5450/original.jpg",
+    "kitsu_id": 5450,
+    "mean": 118.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "byakuya",
+    "name": "Byakuya",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5609/original.jpg",
+    "kitsu_id": 5609,
+    "mean": 158.3,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "kenpachi",
+    "name": "Kenpachi",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5702/original.jpg",
+    "kitsu_id": 5702,
+    "mean": 105.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "aizen",
+    "name": "Aizen",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5540/original.jpg",
+    "kitsu_id": 5540,
+    "mean": 107.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "urahara",
+    "name": "Urahara",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5693/original.jpg",
+    "kitsu_id": 5693,
+    "mean": 122.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "ulquiorra",
+    "name": "Ulquiorra",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5554/original.jpg",
+    "kitsu_id": 5554,
+    "mean": 168.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "yamamoto",
+    "name": "Yamamoto",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5699/original.jpg",
+    "kitsu_id": 5699,
+    "mean": 175.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "gojo",
+    "name": "Gojo",
+    "anime": "Jujutsu Kaisen",
+    "url": "https://media.kitsu.app/character/105898/image/8a8a441392fe5191c2449460e7338ce6.jpg",
+    "kitsu_id": 105898,
+    "mean": 78.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 1524x2398)"
+  },
+  {
+    "id": "yuji",
+    "name": "Yuji",
+    "anime": "Jujutsu Kaisen",
+    "url": "https://media.kitsu.app/character/105902/image/7fddba940feccb98fbc613fce4fe2a8e.jpg",
+    "kitsu_id": 105902,
+    "mean": 55.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 615x973)"
+  },
+  {
+    "id": "megumi",
+    "name": "Megumi",
+    "anime": "Jujutsu Kaisen",
+    "url": "https://media.kitsu.app/character/105901/image/762b0293d9cd5de95289ea8a9b072b9e.jpg",
+    "kitsu_id": 105901,
+    "mean": 86.9,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "sukuna",
+    "name": "Sukuna",
+    "anime": "Jujutsu Kaisen",
+    "url": "https://media.kitsu.app/character/105906/image/de1a29b96b9a8d7eddb6940249d71cd8.jpg",
+    "kitsu_id": 105906,
+    "mean": 57.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "yuta",
+    "name": "Yuta",
+    "anime": "Jujutsu Kaisen",
+    "url": "https://media.kitsu.app/character/105900/image/c18c5241b9bc03f730db4f8eee567edb.jpg",
+    "kitsu_id": 105900,
+    "mean": 117.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 763x1200)"
+  },
+  {
+    "id": "toji",
+    "name": "Toji",
+    "anime": "Jujutsu Kaisen",
+    "url": "https://media.kitsu.app/character/105905/image/d2a5b01f4b2b1a545c9d39f61381b887.jpg",
+    "kitsu_id": 105905,
+    "mean": 82.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "tanjiro",
+    "name": "Tanjiro",
+    "anime": "Demon Slayer",
+    "url": "https://media.kitsu.app/characters/images/75716/original.jpg",
+    "kitsu_id": 75716,
+    "mean": 94.9,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "nezuko",
+    "name": "Nezuko",
+    "anime": "Demon Slayer",
+    "url": "https://media.kitsu.app/characters/images/74558/original.jpg",
+    "kitsu_id": 74558,
+    "mean": 75.3,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "zenitsu",
+    "name": "Zenitsu",
+    "anime": "Demon Slayer",
+    "url": "https://media.kitsu.app/characters/images/85514/original.jpg",
+    "kitsu_id": 85514,
+    "mean": 171.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "rengoku",
+    "name": "Rengoku",
+    "anime": "Demon Slayer",
+    "url": "images/characters/rengoku.png",
+    "kitsu_id": null,
+    "mean": 160.1,
+    "status": "GANTI",
+    "catatan": "GANTI (sebelumnya kosong; Kitsu #95982 image:null; diganti bundle lokal dari AniList #129133) (https://s4.anilist.co/file/anilistcdn/character/large/b129133-VlTPowwt68rJ.png)"
+  },
+  {
+    "id": "muzan",
+    "name": "Muzan",
+    "anime": "Demon Slayer",
+    "url": "images/characters/muzan.jpg",
+    "kitsu_id": null,
+    "mean": 118.5,
+    "status": "GANTI",
+    "catatan": "GANTI (lama Kitsu #95995 manga hitam-putih sat=0.0; diganti bundle lokal dari AniList #129132) (https://s4.anilist.co/file/anilistcdn/character/large/b129132-4nIZakUZ1o8W.jpg)"
+  },
+  {
+    "id": "deku",
+    "name": "Deku",
+    "anime": "My Hero Academia",
+    "url": "https://media.kitsu.app/characters/images/61663/original.jpg",
+    "kitsu_id": 61663,
+    "mean": 85.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "bakugo",
+    "name": "Bakugo",
+    "anime": "My Hero Academia",
+    "url": "https://media.kitsu.app/characters/images/61661/original.jpg",
+    "kitsu_id": 61661,
+    "mean": 136.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "todoroki",
+    "name": "Todoroki",
+    "anime": "My Hero Academia",
+    "url": "https://media.kitsu.app/characters/images/61664/original.jpg",
+    "kitsu_id": 61664,
+    "mean": 107.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "allmight",
+    "name": "All Might",
+    "anime": "My Hero Academia",
+    "url": "https://media.kitsu.app/characters/images/61660/original.jpg",
+    "kitsu_id": 61660,
+    "mean": 82.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "shigaraki",
+    "name": "Shigaraki",
+    "anime": "My Hero Academia",
+    "url": "https://media.kitsu.app/characters/images/87109/original.jpg",
+    "kitsu_id": 87109,
+    "mean": 90.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x349)"
+  },
+  {
+    "id": "gon",
+    "name": "Gon",
+    "anime": "Hunter x Hunter",
+    "url": "https://media.kitsu.app/characters/images/2816/original.jpg",
+    "kitsu_id": 2816,
+    "mean": 107.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "killua",
+    "name": "Killua",
+    "anime": "Hunter x Hunter",
+    "url": "https://media.kitsu.app/characters/images/2818/original.jpg",
+    "kitsu_id": 2818,
+    "mean": 186.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "hisoka",
+    "name": "Hisoka",
+    "anime": "Hunter x Hunter",
+    "url": "https://media.kitsu.app/characters/images/2819/original.jpg",
+    "kitsu_id": 2819,
+    "mean": 148.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "kurapika",
+    "name": "Kurapika",
+    "anime": "Hunter x Hunter",
+    "url": "https://media.kitsu.app/characters/images/2815/original.jpg",
+    "kitsu_id": 2815,
+    "mean": 147.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "saitama",
+    "name": "Saitama",
+    "anime": "One Punch Man",
+    "url": "https://media.kitsu.app/characters/images/57048/original.jpg",
+    "kitsu_id": 57048,
+    "mean": 118.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "genos",
+    "name": "Genos",
+    "anime": "One Punch Man",
+    "url": "https://media.kitsu.app/characters/images/57047/original.jpg",
+    "kitsu_id": 57047,
+    "mean": 125.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "garou",
+    "name": "Garou",
+    "anime": "One Punch Man",
+    "url": "images/characters/garou.png",
+    "kitsu_id": null,
+    "mean": 129.5,
+    "status": "GANTI",
+    "catatan": "GANTI (lama Kitsu #84805 manga hitam-putih sat=0.0; diganti bundle lokal dari AniList #89277) (https://s4.anilist.co/file/anilistcdn/character/large/b89277-xBGb4B5YISXg.png)"
+  },
+  {
+    "id": "eren",
+    "name": "Eren",
+    "anime": "Attack on Titan",
+    "url": "https://media.kitsu.app/characters/images/38507/original.jpg",
+    "kitsu_id": 38507,
+    "mean": 90.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "levi",
+    "name": "Levi",
+    "anime": "Attack on Titan",
+    "url": "https://media.kitsu.app/characters/images/39556/original.jpg",
+    "kitsu_id": 39556,
+    "mean": 80.3,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "mikasa",
+    "name": "Mikasa",
+    "anime": "Attack on Titan",
+    "url": "https://media.kitsu.app/characters/images/38505/original.jpg",
+    "kitsu_id": 38505,
+    "mean": 113.3,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "jotaro",
+    "name": "Jotaro",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/9483/original.jpg",
+    "kitsu_id": 9483,
+    "mean": 106.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "dio",
+    "name": "Dio",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/9486/original.jpg",
+    "kitsu_id": 9486,
+    "mean": 119.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "giorno",
+    "name": "Giorno",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/48031/original.jpg",
+    "kitsu_id": 48031,
+    "mean": 158.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "josuke",
+    "name": "Josuke",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/48013/original.jpg",
+    "kitsu_id": 48013,
+    "mean": 109.0,
+    "status": "GANTI",
+    "catatan": "GANTI (lama Kitsu #92548 salah karakter: Josuke Part 8 JoJolion, bukan Part 4 Crazy Diamond; diganti Kitsu #48013 Part 4)"
+  },
+  {
+    "id": "asta",
+    "name": "Asta",
+    "anime": "Black Clover",
+    "url": "https://media.kitsu.app/characters/images/59577/original.jpg",
+    "kitsu_id": 59577,
+    "mean": 114.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "yuno",
+    "name": "Yuno",
+    "anime": "Black Clover",
+    "url": "https://media.kitsu.app/characters/images/59576/original.jpg",
+    "kitsu_id": 59576,
+    "mean": 99.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "natsu",
+    "name": "Natsu",
+    "anime": "Fairy Tail",
+    "url": "https://media.kitsu.app/characters/images/29657/original.jpg",
+    "kitsu_id": 29657,
+    "mean": 152.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "erza",
+    "name": "Erza",
+    "anime": "Fairy Tail",
+    "url": "https://media.kitsu.app/characters/images/29661/original.jpg",
+    "kitsu_id": 29661,
+    "mean": 136.9,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "denji",
+    "name": "Denji",
+    "anime": "Chainsaw Man",
+    "url": "https://media.kitsu.app/character/105893/image/4816138b1551ed135da1c81062d21e4b.jpg",
+    "kitsu_id": 105893,
+    "mean": 122.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 450x700)"
+  },
+  {
+    "id": "makima",
+    "name": "Makima",
+    "anime": "Chainsaw Man",
+    "url": "https://media.kitsu.app/character/105895/image/3eeb01492976a919fd30d9b368d57924.jpg",
+    "kitsu_id": 105895,
+    "mean": 146.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 252x392)"
+  },
+  {
+    "id": "power",
+    "name": "Power",
+    "anime": "Chainsaw Man",
+    "url": "https://media.kitsu.app/character/105896/image/b9836f12f41fe572534cc4b983e36479.jpg",
+    "kitsu_id": 105896,
+    "mean": 180.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "jinwoo",
+    "name": "Sung Jinwoo",
+    "anime": "Solo Leveling",
+    "url": "images/characters/jinwoo.png",
+    "kitsu_id": null,
+    "mean": 78.4,
+    "status": "GANTI",
+    "catatan": "GANTI (sebelumnya kosong; tidak ada di Kitsu; diganti bundle lokal dari AniList #129928) (https://s4.anilist.co/file/anilistcdn/character/large/b129928-BCEjVaP0AQSw.png)"
+  },
+  {
+    "id": "mob",
+    "name": "Mob",
+    "anime": "Mob Psycho 100",
+    "url": "https://media.kitsu.app/characters/images/66790/original.jpg",
+    "kitsu_id": 66790,
+    "mean": 114.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "edward",
+    "name": "Edward Elric",
+    "anime": "Fullmetal Alchemist",
+    "url": "https://media.kitsu.app/characters/images/2536/original.jpg",
+    "kitsu_id": 2536,
+    "mean": 139.9,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "kaneki",
+    "name": "Kaneki",
+    "anime": "Tokyo Ghoul",
+    "url": "https://media.kitsu.app/characters/images/48622/original.jpg",
+    "kitsu_id": 48622,
+    "mean": 99.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "kirito",
+    "name": "Kirito",
+    "anime": "Sword Art Online",
+    "url": "https://media.kitsu.app/characters/images/35729/original.jpg",
+    "kitsu_id": 35729,
+    "mean": 82.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "gintoki",
+    "name": "Gintoki",
+    "anime": "Gintama",
+    "url": "https://media.kitsu.app/characters/images/11441/original.jpg",
+    "kitsu_id": 11441,
+    "mean": 165.9,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "blackbeard",
+    "name": "Marshall D. Teach",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/866/original.jpg",
+    "kitsu_id": 866,
+    "mean": 82.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "chopper",
+    "name": "Tony Tony Chopper",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/414/original.jpg",
+    "kitsu_id": 414,
+    "mean": 140.3,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "franky",
+    "name": "Franky",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/406/original.jpg",
+    "kitsu_id": 406,
+    "mean": 144.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "jinbe",
+    "name": "Jinbe",
+    "anime": "One Piece",
+    "url": "https://media.kitsu.app/characters/images/498/original.jpg",
+    "kitsu_id": 498,
+    "mean": 159.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "yamato",
+    "name": "Yamato",
+    "anime": "One Piece",
+    "url": "images/characters/yamato.png",
+    "kitsu_id": null,
+    "mean": 166.8,
+    "status": "GANTI",
+    "catatan": "GANTI (sebelumnya kosong; tidak ada di Kitsu; diganti bundle lokal dari AniList #176840) (https://s4.anilist.co/file/anilistcdn/character/large/b176840-8KRqXXLJeLOg.png)"
+  },
+  {
+    "id": "android_17",
+    "name": "Android 17",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/4206/original.jpg",
+    "kitsu_id": 4206,
+    "mean": 90.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "android_18",
+    "name": "Android 18",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/4211/original.jpg",
+    "kitsu_id": 4211,
+    "mean": 165.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "trunks",
+    "name": "Trunks",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/86951/original.jpg",
+    "kitsu_id": 86951,
+    "mean": 76.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "whis",
+    "name": "Whis",
+    "anime": "Dragon Ball",
+    "url": "https://media.kitsu.app/characters/images/37888/original.jpg",
+    "kitsu_id": 37888,
+    "mean": 163.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "obito",
+    "name": "Obito Uchiha",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/17953/original.jpg",
+    "kitsu_id": 17953,
+    "mean": 79.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "orochimaru",
+    "name": "Orochimaru",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/227/original.jpg",
+    "kitsu_id": 227,
+    "mean": 120.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "shikamaru",
+    "name": "Shikamaru Nara",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/372/original.jpg",
+    "kitsu_id": 372,
+    "mean": 137.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "tsunade",
+    "name": "Tsunade",
+    "anime": "Naruto",
+    "url": "https://media.kitsu.app/characters/images/229/original.jpg",
+    "kitsu_id": 229,
+    "mean": 150.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "grimmjow",
+    "name": "Grimmjow Jaegerjaquez",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5593/original.jpg",
+    "kitsu_id": 5593,
+    "mean": 136.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "renji",
+    "name": "Renji Abarai",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5537/original.jpg",
+    "kitsu_id": 5537,
+    "mean": 104.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "toshiro",
+    "name": "Toshiro Hitsugaya",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5578/original.jpg",
+    "kitsu_id": 5578,
+    "mean": 135.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "yoruichi",
+    "name": "Yoruichi Shihoin",
+    "anime": "Bleach",
+    "url": "https://media.kitsu.app/characters/images/5666/original.jpg",
+    "kitsu_id": 5666,
+    "mean": 117.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "kenjaku",
+    "name": "Kenjaku",
+    "anime": "Jujutsu Kaisen",
+    "url": "https://media.kitsu.app/character/105904/image/c63ccde661eaad1a7bace91a91f4e97e.jpg",
+    "kitsu_id": 105904,
+    "mean": 83.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 1221x1920)"
+  },
+  {
+    "id": "mahito",
+    "name": "Mahito",
+    "anime": "Jujutsu Kaisen",
+    "url": "https://media.kitsu.app/character/105912/image/f93eadaeb425d08c3d32622349eaa6ff.jpg",
+    "kitsu_id": 105912,
+    "mean": 139.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "maki",
+    "name": "Maki Zenin",
+    "anime": "Jujutsu Kaisen",
+    "url": "https://media.kitsu.app/character/105909/image/978c0b75541db15e14d9c7f12ae2b681.jpg",
+    "kitsu_id": 105909,
+    "mean": 80.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 736x1150)"
+  },
+  {
+    "id": "nobara",
+    "name": "Nobara Kugisaki",
+    "anime": "Jujutsu Kaisen",
+    "url": "https://media.kitsu.app/character/105903/image/293753a40af0f34df05532a4f413724d.jpg",
+    "kitsu_id": 105903,
+    "mean": 67.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 763x1200)"
+  },
+  {
+    "id": "akaza",
+    "name": "Akaza",
+    "anime": "Demon Slayer",
+    "url": "images/characters/akaza.png",
+    "kitsu_id": null,
+    "mean": 131.5,
+    "status": "GANTI",
+    "catatan": "GANTI (sebelumnya kosong; tidak ada di Kitsu; diganti bundle lokal dari AniList #141694) (https://s4.anilist.co/file/anilistcdn/character/large/b141694-0COi0GVXPuEn.png)"
+  },
+  {
+    "id": "giyu",
+    "name": "Giyu Tomioka",
+    "anime": "Demon Slayer",
+    "url": "images/characters/giyu.png",
+    "kitsu_id": null,
+    "mean": 74.8,
+    "status": "GANTI",
+    "catatan": "GANTI (lama Kitsu #102553 manga hitam-putih sat=0.0; diganti bundle lokal dari AniList #130050) (https://s4.anilist.co/file/anilistcdn/character/large/b130050-qsLThJs5VIbz.png)"
+  },
+  {
+    "id": "inosuke",
+    "name": "Inosuke Hashibira",
+    "anime": "Demon Slayer",
+    "url": "https://media.kitsu.app/characters/images/85908/original.jpg",
+    "kitsu_id": 85908,
+    "mean": 159.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "endeavor",
+    "name": "Endeavor",
+    "anime": "My Hero Academia",
+    "url": "https://media.kitsu.app/characters/images/94227/original.jpg",
+    "kitsu_id": 94227,
+    "mean": 139.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "kirishima",
+    "name": "Eijiro Kirishima",
+    "anime": "My Hero Academia",
+    "url": "https://media.kitsu.app/characters/images/61676/original.jpg",
+    "kitsu_id": 61676,
+    "mean": 99.9,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "ochaco",
+    "name": "Ochaco Uraraka",
+    "anime": "My Hero Academia",
+    "url": "https://media.kitsu.app/characters/images/61665/original.jpg",
+    "kitsu_id": 61665,
+    "mean": 118.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "chrollo",
+    "name": "Chrollo Lucilfer",
+    "anime": "Hunter x Hunter",
+    "url": "https://media.kitsu.app/characters/images/2886/original.jpg",
+    "kitsu_id": 2886,
+    "mean": 153.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "meruem",
+    "name": "Meruem",
+    "anime": "Hunter x Hunter",
+    "url": "https://media.kitsu.app/characters/images/39356/original.jpg",
+    "kitsu_id": 39356,
+    "mean": 93.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "netero",
+    "name": "Isaac Netero",
+    "anime": "Hunter x Hunter",
+    "url": "https://media.kitsu.app/characters/images/2887/original.jpg",
+    "kitsu_id": 2887,
+    "mean": 129.6,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "diavolo",
+    "name": "Diavolo",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/48028/original.jpg",
+    "kitsu_id": 48028,
+    "mean": 82.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "johnny",
+    "name": "Johnny Joestar",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/46354/original.jpg",
+    "kitsu_id": 46354,
+    "mean": 133.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "jolyne",
+    "name": "Jolyne Cujoh",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/47287/original.jpg",
+    "kitsu_id": 47287,
+    "mean": 142.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "jonathan",
+    "name": "Jonathan Joestar",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/24526/original.jpg",
+    "kitsu_id": 24526,
+    "mean": 93.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "joseph",
+    "name": "Joseph Joestar",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/9481/original.png",
+    "kitsu_id": 9481,
+    "mean": 85.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "kars",
+    "name": "Kars",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/37771/original.jpg",
+    "kitsu_id": 37771,
+    "mean": 99.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "kira",
+    "name": "Yoshikage Kira",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/48015/original.jpg",
+    "kitsu_id": 48015,
+    "mean": 146.9,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "pucci",
+    "name": "Enrico Pucci",
+    "anime": "JoJo's Bizarre Adventure",
+    "url": "https://media.kitsu.app/characters/images/48045/original.jpg",
+    "kitsu_id": 48045,
+    "mean": 88.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "bang",
+    "name": "Bang",
+    "anime": "One Punch Man",
+    "url": "https://media.kitsu.app/characters/images/57078/original.jpg",
+    "kitsu_id": 57078,
+    "mean": 82.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "tatsumaki",
+    "name": "Tatsumaki",
+    "anime": "One Punch Man",
+    "url": "https://media.kitsu.app/characters/images/57052/original.jpg",
+    "kitsu_id": 57052,
+    "mean": 128.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "armin",
+    "name": "Armin Arlert",
+    "anime": "Attack on Titan",
+    "url": "https://media.kitsu.app/characters/images/38506/original.jpg",
+    "kitsu_id": 38506,
+    "mean": 132.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "reiner",
+    "name": "Reiner Braun",
+    "anime": "Attack on Titan",
+    "url": "https://media.kitsu.app/characters/images/39811/original.jpg",
+    "kitsu_id": 39811,
+    "mean": 173.3,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "zeke",
+    "name": "Zeke Yeager",
+    "anime": "Attack on Titan",
+    "url": "https://media.kitsu.app/character/89442/image/79015f65d0dcd9a024b9a1f68499792c.jpg",
+    "kitsu_id": 89442,
+    "mean": 102.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "aki",
+    "name": "Aki Hayakawa",
+    "anime": "Chainsaw Man",
+    "url": "images/characters/aki.png",
+    "kitsu_id": null,
+    "mean": 156.1,
+    "status": "GANTI",
+    "catatan": "GANTI (lama Kitsu #105897 pose full-body bg putih kaku; diganti bundle lokal dari AniList #137081) (https://s4.anilist.co/file/anilistcdn/character/large/b137081-TSrUR3mUJL6r.png)"
+  },
+  {
+    "id": "reze",
+    "name": "Reze",
+    "anime": "Chainsaw Man",
+    "url": "https://media.kitsu.app/character/105933/image/352d67824c4d1e47df24f96f1804a0ac.jpg",
+    "kitsu_id": 105933,
+    "mean": 131.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "julius",
+    "name": "Julius Novachrono",
+    "anime": "Black Clover",
+    "url": "https://media.kitsu.app/characters/images/79339/original.jpg",
+    "kitsu_id": 79339,
+    "mean": 173.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "noelle",
+    "name": "Noelle Silva",
+    "anime": "Black Clover",
+    "url": "https://media.kitsu.app/characters/images/64357/original.jpg",
+    "kitsu_id": 64357,
+    "mean": 189.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "yami",
+    "name": "Yami Sukehiro",
+    "anime": "Black Clover",
+    "url": "https://media.kitsu.app/characters/images/76481/original.jpg",
+    "kitsu_id": 76481,
+    "mean": 146.9,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "gray",
+    "name": "Gray Fullbuster",
+    "anime": "Fairy Tail",
+    "url": "https://media.kitsu.app/characters/images/29658/original.jpg",
+    "kitsu_id": 29658,
+    "mean": 125.4,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "laxus",
+    "name": "Laxus Dreyar",
+    "anime": "Fairy Tail",
+    "url": "https://media.kitsu.app/characters/images/29801/original.jpg",
+    "kitsu_id": 29801,
+    "mean": 136.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "lucy",
+    "name": "Lucy Heartfilia",
+    "anime": "Fairy Tail",
+    "url": "https://media.kitsu.app/characters/images/29659/original.jpg",
+    "kitsu_id": 29659,
+    "mean": 175.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "beru",
+    "name": "Beru",
+    "anime": "Solo Leveling",
+    "url": "images/characters/beru.png",
+    "kitsu_id": null,
+    "mean": 48.1,
+    "status": "GANTI",
+    "catatan": "GANTI (sebelumnya kosong; tidak ada di Kitsu; diganti bundle lokal dari AniList #159849) (https://s4.anilist.co/file/anilistcdn/character/large/b159849-p0Szb7KzD2DD.png)"
+  },
+  {
+    "id": "cha_haein",
+    "name": "Cha Hae-In",
+    "anime": "Solo Leveling",
+    "url": "images/characters/cha_haein.png",
+    "kitsu_id": null,
+    "mean": 143.3,
+    "status": "GANTI",
+    "catatan": "GANTI (sebelumnya kosong; tidak ada di Kitsu; diganti bundle lokal dari AniList #138789) (https://s4.anilist.co/file/anilistcdn/character/large/b138789-AhE8m0LWjE7E.png)"
+  },
+  {
+    "id": "igris",
+    "name": "Igris",
+    "anime": "Solo Leveling",
+    "url": "images/characters/igris.png",
+    "kitsu_id": null,
+    "mean": 41.3,
+    "status": "GANTI",
+    "catatan": "GANTI (sebelumnya kosong; tidak ada di Kitsu; diganti bundle lokal dari AniList #145722) (https://s4.anilist.co/file/anilistcdn/character/large/b145722-qSJ71S6vpeeM.png)"
+  },
+  {
+    "id": "teruki",
+    "name": "Teruki Hanazawa",
+    "anime": "Mob Psycho 100",
+    "url": "images/characters/teruki.png",
+    "kitsu_id": null,
+    "mean": 162.7,
+    "status": "GANTI",
+    "catatan": "GANTI (lama Kitsu #65127 gaya wiki kaku full-body bg putih; diganti bundle lokal dari AniList #89621) (https://s4.anilist.co/file/anilistcdn/character/large/b89621-3uLnmhFOGYFv.png)"
+  },
+  {
+    "id": "alphonse",
+    "name": "Alphonse Elric",
+    "anime": "Fullmetal Alchemist",
+    "url": "https://media.kitsu.app/characters/images/2537/original.jpg",
+    "kitsu_id": 2537,
+    "mean": 96.7,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "roy",
+    "name": "Roy Mustang",
+    "anime": "Fullmetal Alchemist",
+    "url": "https://media.kitsu.app/characters/images/2599/original.jpg",
+    "kitsu_id": 2599,
+    "mean": 114.1,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "scar",
+    "name": "Scar",
+    "anime": "Fullmetal Alchemist",
+    "url": "https://media.kitsu.app/characters/images/2538/original.jpg",
+    "kitsu_id": 2538,
+    "mean": 115.5,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "arima",
+    "name": "Kishou Arima",
+    "anime": "Tokyo Ghoul",
+    "url": "https://media.kitsu.app/characters/images/58383/original.jpg",
+    "kitsu_id": 58383,
+    "mean": 171.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "touka",
+    "name": "Touka Kirishima",
+    "anime": "Tokyo Ghoul",
+    "url": "https://media.kitsu.app/characters/images/48623/original.jpg",
+    "kitsu_id": 48623,
+    "mean": 165.2,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "asuna",
+    "name": "Asuna Yuuki",
+    "anime": "Sword Art Online",
+    "url": "https://media.kitsu.app/characters/images/35731/original.jpg",
+    "kitsu_id": 35731,
+    "mean": 164.0,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "heathcliff",
+    "name": "Heathcliff",
+    "anime": "Sword Art Online",
+    "url": "https://media.kitsu.app/characters/images/35741/original.jpg",
+    "kitsu_id": 35741,
+    "mean": 172.9,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "hijikata",
+    "name": "Toshiro Hijikata",
+    "anime": "Gintama",
+    "url": "https://media.kitsu.app/characters/images/11583/original.jpg",
+    "kitsu_id": 11583,
+    "mean": 102.3,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  },
+  {
+    "id": "kagura",
+    "name": "Kagura",
+    "anime": "Gintama",
+    "url": "https://media.kitsu.app/characters/images/11440/original.jpg",
+    "kitsu_id": 11440,
+    "mean": 117.8,
+    "status": "PERTAHANKAN",
+    "catatan": "PERTAHANKAN (potret resmi Kitsu bersih, 225x350)"
+  }
+]

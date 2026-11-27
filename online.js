@@ -257,11 +257,12 @@
   // Tamu: join room pakai kode.
   Online.joinRoom = function (code, name) {
     if (!peerReady()) { emit({ type: "error", message: "PeerJS tidak bisa dimuat — cek internet lalu refresh." }); return; }
+    var cleanCode = (code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (cleanCode.length < 4) { emit({ type: "error", message: "Kode room tidak valid." }); return; }
     Online.destroy();
     Online.isHost = false;
     Online.myName = name || "Pemain 2";
-    Online.roomCode = (code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    if (Online.roomCode.length < 4) { emit({ type: "error", message: "Kode room tidak valid." }); return; }
+    Online.roomCode = cleanCode;
     var peer = new Peer(peerOptions());
     Online.peer = peer;
     clearJoinTimers();
