@@ -1,9 +1,11 @@
-// Anime Fighter (web) v4.5 — ala Build An Anime Character.
+// Anime Fighter (web) v4.6 — ala Build An Anime Character.
 // Match lokal (bot/duel 1 layar): 5 ronde, gacha sepasang, pasang sendiri,
 // v4.2: join timeout (12 dtk peer open + 10 dtk conn open) + error case tampilkan COBA LAGI.
 // v4.3: UI polish Neon HIGH (topbar/tabs/kartu/HUD/room/SHOWDOWN) + reorder joinRoomBtn + guard timeout.
 // v4.4: TURN test (OpenRelay) + pesan timeout dibedakan tahap-1/tahap-2 (online.js peerOptions()).
 // v4.5: diagnostik ICE (iceDiag: kandidat host/srflx/relay + err) + OpenRelay dihapus (kredensial bersama sudah tidak didokumentasikan Metered).
+// v4.6: modal PENGATURAN (tombol ⚙ Atur di topbar) — musik latar (3 OST anime asli + upload MP3 + URL MP3, <audio> loop)
+//       + latar belakang (4 gradien nuansa anime + kolase karakter + URL/upload gambar). Match flow / timer / roster / online.js TIDAK disentuh.
 // stat DITAMPILIN selama match (chip di kartu + nilai per slot), timer acak
 // 11-20 dtk, reroll sepasang 100 Cash. Gambar kartu object-fit contain
 // (utuh, tidak kepotong). Battle menu disembunyiin saat match aktif.
@@ -40,7 +42,11 @@
 
   // ---------------- SAVE ----------------
   function defaultSave() {
-    return { cash: 200, wins: 0, battles: 0, soundOn: true };
+    return {
+      cash: 200, wins: 0, battles: 0, soundOn: true,
+      music: { on: true, track: "overtaken", vol: 25, url: "" },
+      bg: { preset: "malam", url: "" }
+    };
   }
   function loadSave() {
     try {
@@ -49,6 +55,11 @@
       var s = JSON.parse(raw);
       var d = defaultSave();
       for (var k in d) if (s[k] === undefined) s[k] = d[k];
+      // Save lama tidak punya music/bg, atau nested-nya tidak lengkap — lengkapi.
+      if (!s.music || typeof s.music !== "object") s.music = d.music;
+      else for (var mk in d.music) if (s.music[mk] === undefined) s.music[mk] = d.music[mk];
+      if (!s.bg || typeof s.bg !== "object") s.bg = d.bg;
+      else for (var bk in d.bg) if (s.bg[bk] === undefined) s.bg[bk] = d.bg[bk];
       return s;
     } catch (e) { return defaultSave(); }
   }
@@ -957,7 +968,303 @@
     onlineResetRoomPanel();
   });
 
+  // ---------------- MUSIK LATAR + LATAR BELAKANG (v4.6) ----------------
+  // Desain Neon (dikritisi Dapus): modal ⚙ Atur, bukan tab ke-4 (tab sudah
+  // sempit + volume harus bisa diubah di tengah match). Musik pakai <audio>
+  // loop (hemat RAM vs WebAudio decode), file MP3 diunduh ke audio/ (bukan
+  // hotlink). Background via #bgLayer fixed (bukan background-attachment:
+  // fixed — rusak di iOS Safari). Upload tersimpan di IndexedDB; kalau
+  // storage diblokir (incognito) fallback ke object URL sesi saja.
+  var BGM_TRACKS = [
+    { id: "overtaken", label: "Overtaken", sub: "One Piece", src: "audio/bgm-overtaken.mp3", gain: 1 },
+    { id: "sadness", label: "Sadness & Sorrow", sub: "Naruto", src: "audio/bgm-sadness.mp3", gain: 1 },
+    { id: "yousee", label: "YouSeeBIGGIRL/T:T", sub: "Attack on Titan", src: "audio/bgm-yousee.mp3", gain: 0.4 }
+  ];
+  var BG_PRESETS = [
+    { id: "malam", label: "Arena Malam", css: "radial-gradient(circle at 50% 0%, #1d2038 0%, #0d0e17 65%)" },
+    { id: "sakura", label: "Sakura Senja", css: "linear-gradient(160deg, #3b1d3a 0%, #7a2e4d 45%, #1c1030 100%)" },
+    { id: "cyber", label: "Cyber Tokyo", css: "linear-gradient(160deg, #0a2a3a 0%, #123a6b 50%, #0d0e17 100%)" },
+    { id: "api", label: "Api Shonen", css: "linear-gradient(160deg, #4a1503 0%, #8a2a0c 50%, #1c0a05 100%)" },
+    { id: "kolase", label: "Kolase Karakter", collage: true }
+  ];
+  var COLLAGE_NAMES = ["Goku", "Monkey D. Luffy", "Naruto Uzumaki", "Satoru Gojo", "Tanjiro Kamado", "Levi Ackerman"];
+  var MUSIC_MAX_MB = 15, BG_MAX_MB = 8;
+
+  // --- IndexedDB kecil untuk file upload (musik + gambar) ---
+  var idb = null, idbFailed = false;
+  function idbOpen(cb) {
+    if (idb) return cb(idb);
+    if (idbFailed || !window.indexedDB) return cb(null);
+    try {
+      var req = window.indexedDB.open("animeFighterMedia", 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore("media"); };
+      req.onsuccess = function () { idb = req.result; cb(idb); };
+      req.onerror = function () { idbFailed = true; cb(null); };
+    } catch (e) { idbFailed = true; cb(null); }
+  }
+  function idbPut(key, blob, cb) {
+    idbOpen(function (db) {
+      if (!db) return cb(false);
+      try {
+        var tx = db.transaction("media", "readwrite");
+        tx.objectStore("media").put(blob, key);
+        tx.oncomplete = function () { cb(true); };
+        tx.onerror = function () { cb(false); };
+      } catch (e) { cb(false); }
+    });
+  }
+  function idbGet(key, cb) {
+    idbOpen(function (db) {
+      if (!db) return cb(null);
+      try {
+        var req = db.transaction("media", "readonly").objectStore("media").get(key);
+        req.onsuccess = function () { cb(req.result || null); };
+        req.onerror = function () { cb(null); };
+      } catch (e) { cb(null); }
+    });
+  }
+
+  // --- Musik latar (<audio> loop) ---
+  var bgmAudio = null, bgmCustomBlobUrl = null, bgmCustomIsUrl = false;
+  function bgmEl() {
+    if (bgmAudio) return bgmAudio;
+    try {
+      bgmAudio = new Audio();
+      bgmAudio.loop = true;
+      bgmAudio.preload = "auto";
+      bgmAudio.addEventListener("error", function () {
+        if (save.music.track === "custom") {
+          toast("Musik custom gagal dimuat — balik ke Overtaken.");
+          save.music.track = "overtaken"; save.music.url = "";
+          persist(); renderMusicUI(); bgmApply();
+        }
+      });
+    } catch (e) { return null; }
+    return bgmAudio;
+  }
+  function bgmTrack() {
+    for (var i = 0; i < BGM_TRACKS.length; i++) if (BGM_TRACKS[i].id === save.music.track) return BGM_TRACKS[i];
+    return BGM_TRACKS[0];
+  }
+  function bgmSrc() {
+    if (save.music.track === "custom") {
+      if (bgmCustomBlobUrl) return bgmCustomBlobUrl;
+      if (save.music.url) return save.music.url;
+      return BGM_TRACKS[0].src;
+    }
+    return bgmTrack().src;
+  }
+  function bgmApply() {
+    var a = bgmEl(); if (!a) return;
+    var src = bgmSrc();
+    try {
+      if (a.getAttribute("data-src") !== src) { a.src = src; a.setAttribute("data-src", src); }
+      var gain = save.music.track === "custom" ? 1 : bgmTrack().gain;
+      a.volume = Math.max(0, Math.min(1, (save.music.vol / 100) * gain));
+      if (save.music.on) { var p = a.play(); if (p && p.catch) p.catch(function () {}); }
+      else a.pause();
+    } catch (e) {}
+  }
+  function bgmArm() {
+    // Autoplay: play() harus dipanggil sinkron di dalam gestur pertama.
+    bgmApply();
+    document.removeEventListener("pointerdown", bgmArm);
+    document.removeEventListener("keydown", bgmArm);
+  }
+  function renderMusicUI() {
+    var t = bgmTrack();
+    var tog = $("musicToggleBtn"); if (tog) tog.textContent = save.music.on ? "ON" : "OFF";
+    var vol = $("musicVol"); if (vol) vol.value = save.music.vol;
+    var vl = $("musicVolLabel"); if (vl) vl.textContent = save.music.vol + "%";
+    var st = $("musicStatus");
+    if (st) st.textContent = save.music.track === "custom"
+      ? (bgmCustomIsUrl ? "MP3 dari URL" : "MP3 upload lo") + (save.music.on ? "" : " (mati)")
+      : t.label + " — " + t.sub + (save.music.on ? "" : " (mati)");
+    var box = $("trackChips"); if (!box) return;
+    var html = "";
+    for (var i = 0; i < BGM_TRACKS.length; i++) {
+      var tr = BGM_TRACKS[i];
+      html += '<button class="track-chip' + (save.music.track === tr.id ? " active" : "") + '" data-track="' + tr.id + '"><b>' + esc(tr.label) + '</b><span>' + esc(tr.sub) + '</span></button>';
+    }
+    if (save.music.track === "custom" || bgmCustomBlobUrl || save.music.url)
+      html += '<button class="track-chip' + (save.music.track === "custom" ? " active" : "") + '" data-track="custom"><b>MP3 Lo</b><span>' + (save.music.url && !bgmCustomBlobUrl ? "dari URL" : "upload") + '</span></button>';
+    box.innerHTML = html;
+    var chips = box.querySelectorAll(".track-chip");
+    for (var j = 0; j < chips.length; j++) chips[j].addEventListener("click", function () {
+      save.music.track = this.getAttribute("data-track");
+      persist(); renderMusicUI(); bgmApply(); sfx.click();
+    });
+  }
+
+  // --- Latar belakang (#bgLayer) ---
+  var bgCustomBlobUrl = null;
+  function collageUrls() {
+    var urls = [];
+    for (var i = 0; i < COLLAGE_NAMES.length; i++) {
+      for (var j = 0; j < CHARACTERS.length; j++) {
+        if (CHARACTERS[j].name === COLLAGE_NAMES[i] && CHARACTERS[j].img) { urls.push(CHARACTERS[j].img); break; }
+      }
+    }
+    if (urls.length < 6) for (var k = 0; k < CHARACTERS.length && urls.length < 6; k++)
+      if (CHARACTERS[k].img && urls.indexOf(CHARACTERS[k].img) === -1) urls.push(CHARACTERS[k].img);
+    return urls;
+  }
+  function applyBg() {
+    var layer = $("bgLayer"); if (!layer || !layer.style) return; // sim headless: stub DOM tanpa .style
+    var preset = null;
+    for (var i = 0; i < BG_PRESETS.length; i++) if (BG_PRESETS[i].id === save.bg.preset) preset = BG_PRESETS[i];
+    if (!preset) preset = BG_PRESETS[0];
+    layer.style.backgroundImage = "";
+    layer.style.backgroundSize = "";
+    layer.style.backgroundPosition = "";
+    layer.style.backgroundRepeat = "";
+    if (save.bg.preset === "custom") {
+      var u = bgCustomBlobUrl || save.bg.url;
+      if (u) {
+        layer.style.backgroundImage = 'url("' + u.replace(/"/g, "") + '")';
+        layer.style.backgroundSize = "cover";
+        layer.style.backgroundPosition = "center";
+      }
+      return;
+    }
+    if (preset.collage) {
+      var urls = collageUrls();
+      if (!urls.length) { layer.style.background = BG_PRESETS[0].css; return; }
+      var pos = ["0% 0%", "50% 0%", "100% 0%", "0% 100%", "50% 100%", "100% 100%"];
+      layer.style.backgroundImage = urls.slice(0, 6).map(function (x) { return 'url("' + x + '")'; }).join(", ");
+      layer.style.backgroundSize = "33.4% 50%";
+      layer.style.backgroundPosition = pos.slice(0, urls.length).join(", ");
+      layer.style.backgroundRepeat = "no-repeat";
+      return;
+    }
+    layer.style.background = preset.css;
+  }
+  function renderBgUI() {
+    var st = $("bgStatus");
+    var label = "Arena Malam";
+    if (save.bg.preset === "custom") label = bgCustomBlobUrl ? "Gambar upload lo" : (save.bg.url ? "Gambar dari URL" : "Arena Malam");
+    else for (var i = 0; i < BG_PRESETS.length; i++) if (BG_PRESETS[i].id === save.bg.preset) label = BG_PRESETS[i].label;
+    if (st) st.textContent = label;
+    var box = $("bgSwatches"); if (!box) return;
+    var html = "";
+    for (var j = 0; j < BG_PRESETS.length; j++) {
+      var p = BG_PRESETS[j];
+      var style = p.collage
+        ? "background:linear-gradient(135deg,#3b82f6 0%,#aa50ff 33%,#ff2d78 66%,#ffb400 100%)"
+        : "background:" + p.css;
+      html += '<button class="bg-swatch' + (save.bg.preset === p.id ? " active" : "") + '" data-bg="' + p.id + '" style="' + style + '"><span>' + esc(p.label) + '</span></button>';
+    }
+    html += '<button class="bg-swatch' + (save.bg.preset === "custom" ? " active" : "") + '" data-bg="custom" style="background:#23233a"><span>Custom</span></button>';
+    box.innerHTML = html;
+    var sw = box.querySelectorAll(".bg-swatch");
+    for (var k = 0; k < sw.length; k++) sw[k].addEventListener("click", function () {
+      var id = this.getAttribute("data-bg");
+      if (id === "custom") {
+        if (!bgCustomBlobUrl && !save.bg.url) { toast("Upload gambar atau tempel URL dulu."); return; }
+        save.bg.preset = "custom";
+      } else save.bg.preset = id;
+      persist(); renderBgUI(); applyBg(); sfx.click();
+    });
+  }
+
+  // --- Wiring modal + init ---
+  function settingsInit() {
+    var openBtn = $("settingsBtn");
+    if (openBtn) openBtn.addEventListener("click", function () {
+      sfx.click(); renderMusicUI(); renderBgUI();
+      $("settingsModal").classList.remove("hidden");
+    });
+    var closeBtn = $("settingsCloseBtn");
+    if (closeBtn) closeBtn.addEventListener("click", function () { sfx.click(); $("settingsModal").classList.add("hidden"); });
+    var modal = $("settingsModal");
+    if (modal) modal.addEventListener("click", function (e) { if (e.target === modal) modal.classList.add("hidden"); });
+    var tog = $("musicToggleBtn");
+    if (tog) tog.addEventListener("click", function () {
+      save.music.on = !save.music.on; persist(); renderMusicUI(); bgmApply(); sfx.click();
+    });
+    var vol = $("musicVol");
+    if (vol) vol.addEventListener("input", function () {
+      save.music.vol = parseInt(vol.value, 10) || 0; persist(); renderMusicUI(); bgmApply();
+    });
+    var up = $("musicUploadInput");
+    if (up) up.addEventListener("change", function () {
+      var f = up.files && up.files[0]; up.value = "";
+      if (!f) return;
+      if (f.size > MUSIC_MAX_MB * 1024 * 1024) { toast("MP3 maks " + MUSIC_MAX_MB + " MB."); return; }
+      idbPut("bgmCustom", f, function (ok) {
+        bgmCustomBlobUrl = URL.createObjectURL(f); bgmCustomIsUrl = false;
+        save.music.track = "custom"; save.music.url = "";
+        persist(); renderMusicUI(); bgmApply();
+        toast(ok ? "MP3 lo tersimpan — jadi backsound." : "MP3 jalan untuk sesi ini saja (penyimpanan browser diblokir).");
+      });
+    });
+    var urlBtn = $("musicUrlBtn");
+    if (urlBtn) urlBtn.addEventListener("click", function () {
+      var u = prompt("Tempel URL MP3 (mis. https://.../lagu.mp3):", save.music.url || "");
+      if (!u) return;
+      u = u.trim();
+      if (!/^https?:\/\/.+/i.test(u)) { toast("URL harus diawali http:// atau https://"); return; }
+      bgmCustomBlobUrl = null; bgmCustomIsUrl = true;
+      save.music.track = "custom"; save.music.url = u;
+      persist(); renderMusicUI(); bgmApply();
+      toast("Backsound dari URL — kalau gagal dimuat, balik ke Overtaken.");
+    });
+    var bgUp = $("bgUploadInput");
+    if (bgUp) bgUp.addEventListener("change", function () {
+      var f = bgUp.files && bgUp.files[0]; bgUp.value = "";
+      if (!f) return;
+      if (f.size > BG_MAX_MB * 1024 * 1024) { toast("Gambar maks " + BG_MAX_MB + " MB."); return; }
+      idbPut("bgCustom", f, function (ok) {
+        bgCustomBlobUrl = URL.createObjectURL(f);
+        save.bg.preset = "custom"; save.bg.url = "";
+        persist(); renderBgUI(); applyBg();
+        toast(ok ? "Gambar lo tersimpan — jadi background." : "Gambar jalan untuk sesi ini saja (penyimpanan browser diblokir).");
+      });
+    });
+    var bgUrlBtn = $("bgUrlBtn");
+    if (bgUrlBtn) bgUrlBtn.addEventListener("click", function () {
+      var u = prompt("Tempel URL gambar (mis. https://.../wallpaper.jpg):", save.bg.url || "");
+      if (!u) return;
+      u = u.trim();
+      if (!/^https?:\/\/.+/i.test(u)) { toast("URL harus diawali http:// atau https://"); return; }
+      var img = new Image();
+      img.onload = function () {
+        bgCustomBlobUrl = null;
+        save.bg.preset = "custom"; save.bg.url = u;
+        persist(); renderBgUI(); applyBg();
+        toast("Background dari URL terpasang.");
+      };
+      img.onerror = function () { toast("Gagal muat gambar — cek URL."); };
+      img.src = u;
+    });
+    var resetBtn = $("settingsResetBtn");
+    if (resetBtn) resetBtn.addEventListener("click", function () {
+      var d = defaultSave();
+      save.music = d.music; save.bg = d.bg;
+      bgmCustomBlobUrl = null; bgmCustomIsUrl = false; bgCustomBlobUrl = null;
+      persist(); renderMusicUI(); renderBgUI(); applyBg(); bgmApply();
+      toast("Pengaturan direset.");
+    });
+    // Muat file custom dari IndexedDB (kalau ada), lalu terapkan semuanya.
+    idbGet("bgmCustom", function (blob) {
+      if (blob) { try { bgmCustomBlobUrl = URL.createObjectURL(blob); bgmCustomIsUrl = false; } catch (e) {} }
+      idbGet("bgCustom", function (blob2) {
+        if (blob2) { try { bgCustomBlobUrl = URL.createObjectURL(blob2); } catch (e) {} }
+        applyBg();
+        bgmApply();
+      });
+    });
+    document.addEventListener("pointerdown", bgmArm);
+    document.addEventListener("keydown", bgmArm);
+    document.addEventListener("visibilitychange", function () {
+      var a = bgmEl(); if (!a) return;
+      if (document.hidden) a.pause();
+      else if (save.music.on) { var p = a.play(); if (p && p.catch) p.catch(function () {}); }
+    });
+  }
+
   // ---------------- START ----------------
+  settingsInit(); // v4.6: modal pengaturan + musik latar + background
   $("galleryCount").textContent = "(" + CHARACTERS.length + ")";
   onlineSetupHandlers();
   if (typeof Peer === "undefined") {

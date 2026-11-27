@@ -7,12 +7,14 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="bgLayer" class="bg-layer"></div>
 <header class="topbar">
   <div class="logo">ANIME FIGHTER</div>
   <div class="badges">
     <span class="badge" id="cashBadge">Cash: 200</span>
     <span class="badge" id="winsBadge">Wins: 0</span>
     <button class="badge btn-small" id="soundBtn">Suara: ON</button>
+    <button class="badge btn-small" id="settingsBtn">⚙ Atur</button>
   </div>
 </header>
 
@@ -125,6 +127,36 @@
     </div>
   </section>
 </main>
+
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head"><h2>PENGATURAN</h2><button id="settingsCloseBtn" class="btn btn-gray btn-small">TUTUP</button></div>
+    <h3>MUSIK LATAR</h3>
+    <div class="setting-row">
+      <span class="setting-label">Musik</span>
+      <button id="musicToggleBtn" class="btn btn-small">ON</button>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Volume</span>
+      <input id="musicVol" type="range" min="0" max="100" value="25">
+      <span id="musicVolLabel" class="setting-val">25%</span>
+    </div>
+    <div id="trackChips" class="track-chips"></div>
+    <div class="setting-row">
+      <label class="btn btn-purple btn-small file-btn">UPLOAD MP3<input id="musicUploadInput" type="file" accept="audio/mpeg,audio/mp3,audio/*" hidden></label>
+      <button id="musicUrlBtn" class="btn btn-blue btn-small">TEMPEL URL MP3</button>
+    </div>
+    <p class="hint" id="musicStatus">Overtaken — One Piece</p>
+    <h3>LATAR BELAKANG</h3>
+    <div id="bgSwatches" class="bg-swatches"></div>
+    <div class="setting-row">
+      <button id="bgUrlBtn" class="btn btn-blue btn-small">TEMPEL URL GAMBAR</button>
+      <label class="btn btn-purple btn-small file-btn">UPLOAD GAMBAR<input id="bgUploadInput" type="file" accept="image/*" hidden></label>
+    </div>
+    <p class="hint" id="bgStatus">Arena Malam</p>
+    <button id="settingsResetBtn" class="btn btn-gray" style="width:100%;margin-top:6px">RESET PENGATURAN</button>
+  </div>
+</div>
 
 <div id="toast" class="toast"></div>
 

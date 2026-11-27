@@ -48,7 +48,7 @@ main { max-width: 960px; margin: 0 auto; padding: 10px 12px 24px; }
 .tabpage { display: none; }
 .tabpage.active { display: block; }
 .panel {
-  background: #161829; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px;
+  background: rgba(22, 24, 41, 0.88); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px;
   padding: 14px; margin-bottom: 14px; max-width: 100%; overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
 }
@@ -443,6 +443,59 @@ input[type="text"], select {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .card .card-used { display: block; margin-top: 4px; font-size: 11px; font-weight: 800; color: #37d67a; }
+
+/* ---------- BACKGROUND LAYER (v4.6) ---------- */
+.bg-layer {
+  position: fixed; inset: 0; z-index: -1;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+}
+.bg-layer::after {
+  content: ""; position: absolute; inset: 0;
+  background: rgba(10, 12, 22, 0.72);
+}
+/* ---------- MODAL PENGATURAN (v4.6) ---------- */
+.modal {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(5, 6, 12, 0.6);
+}
+.modal-card {
+  width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto;
+  background: #191c33; border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px 16px 0 0; padding: 14px;
+}
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.modal-head h2 { margin: 0; font-size: 17px; font-weight: 900; color: #ffb830; letter-spacing: .6px; }
+.modal-card h3 {
+  font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+  color: #8f95b8; margin: 12px 0 6px;
+}
+.setting-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.setting-label { font-weight: 800; font-size: 13px; color: #cfd3e8; width: 64px; flex-shrink: 0; }
+.setting-val { font-weight: 800; font-size: 13px; color: #ffd479; width: 42px; text-align: right; flex-shrink: 0; }
+.setting-row input[type="range"] { flex: 1; accent-color: #ffb830; min-width: 0; }
+.setting-row .btn { flex: 1; }
+.track-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.track-chip {
+  background: #101222; border: 1.5px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
+  padding: 9px 10px; text-align: left; color: #fff; font-family: inherit; cursor: pointer;
+}
+.track-chip b { display: block; font-size: 13px; }
+.track-chip span { font-size: 11px; color: #969cb8; }
+.track-chip.active { border-color: #ffb830; box-shadow: 0 0 0 2px rgba(255, 184, 48, 0.35); background: #1a1d33; }
+.bg-swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.bg-swatch {
+  height: 56px; border-radius: 10px; border: 2px solid transparent; cursor: pointer;
+  position: relative; overflow: hidden; padding: 0; font-family: inherit;
+  background-size: cover; background-position: center;
+}
+.bg-swatch.active { border-color: #ffb830; box-shadow: 0 0 0 2px rgba(255, 184, 48, 0.4); }
+.bg-swatch span {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  font-size: 10.5px; font-weight: 800; text-align: center; padding: 3px 2px;
+  background: rgba(0, 0, 0, 0.55); color: #fff;
+}
+.file-btn { cursor: pointer; text-align: center; }
 
 @media (max-width: 560px) {
   .topbar { flex-direction: column; align-items: stretch; gap: 6px; padding: 8px 10px; }
