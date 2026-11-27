@@ -28,6 +28,42 @@
 
   var reconnectTimer = null;
 
+  // v4.2 — join timeout (tamu): joinRoom TIDAK PUNYA TIMEOUT di v4/v4.1,
+  // jadi kalau peer tidak pernah "open" atau conn tidak pernah "open",
+  // status "Join room ..." menggantung selamanya tanpa error + tanpa
+  // COBA LAGI (tes live room 9BJE6K, 27 Nov 15:08-15:12: 4x hang 60+ dtk).
+  // Timer tahap-1: peer belum "open" dalam 12 dtk. Timer tahap-2: peer
+  // sudah "open" tapi conn belum "open" dalam 10 dtk. Keduanya dibersihkan
+  // saat conn "open" atau saat error apapun fire, dan dijaga dengan
+  // stale-peer guard (pola yang sama seperti fix race v4.1).
+  var JOIN_TIMEOUT_MS = 12000;
+  var CONN_TIMEOUT_MS = 10000;
+  var JOIN_TIMEOUT_MSG = "Tidak bisa nyambung — cek internet, pastikan host masih buka tab gamenya & belum pindah aplikasi, lalu tap COBA LAGI.";
+  var joinTimer = null;
+  var connTimer = null;
+
+  function clearJoinTimers() {
+    clearTimeout(joinTimer);
+    clearTimeout(connTimer);
+    joinTimer = null;
+    connTimer = null;
+  }
+
+  // Dipanggil saat join gagal karena timeout: bersihkan peer yang menggantung,
+  // tapi PERTAHANKAN roomCode + myName supaya COBA LAGI (retryJoin) tetap bisa
+  // jalan — Online.destroy() sendiri mengosongkan roomCode, jadi tanpa ini
+  // tombol COBA LAGI tidak akan berbuat apa-apa.
+  function failJoinTimeout(peer) {
+    if (Online.peer !== peer) return; // join baru sudah jalan — abaikan timer basi
+    var code = Online.roomCode;
+    var name = Online.myName;
+    clearJoinTimers();
+    Online.destroy();
+    Online.roomCode = code;
+    Online.myName = name;
+    emit({ type: "error", message: JOIN_TIMEOUT_MSG });
+  }
+
   // Daftar ulang ke signaling server dengan ID yang sama (af-XXXXXX) kalau
   // WebSocket ke cloud putus (mis. tab host di-suspend Android saat pindah
   // aplikasi). Guard wajib PeerJS 1.5.4: jangan reconnect peer yang destroyed.
@@ -75,6 +111,7 @@
     Online.conn = conn;
     conn.on("open", function () {
       if (Online.conn !== conn) return; // conn lama yang telat — abaikan
+      clearJoinTimers(); // join berhasil — matikan kedua timer tahap-1/2
       Online.connected = true;
       emit({ type: "connected" });
     });
@@ -149,8 +186,17 @@
     if (Online.roomCode.length < 4) { emit({ type: "error", message: "Kode room tidak valid." }); return; }
     var peer = new Peer({ debug: 0 });
     Online.peer = peer;
+    clearJoinTimers();
+    // Tahap-1: peer tidak pernah "open" (mis. WebSocket ke PeerJS cloud tidak
+    // nyambung dari jaringan tamu) — jangan gantung diam selamanya.
+    joinTimer = setTimeout(function () { failJoinTimeout(peer); }, JOIN_TIMEOUT_MS);
     peer.on("open", function () {
       if (Online.peer !== peer) return; // peer lama yang telat buka — abaikan
+      clearTimeout(joinTimer);
+      joinTimer = null;
+      // Tahap-2: peer "open" tapi conn tidak pernah "open" (mis. host
+      // ke-suspend saat pindah aplikasi) — jangan gantung diam selamanya.
+      connTimer = setTimeout(function () { failJoinTimeout(peer); }, CONN_TIMEOUT_MS);
       var conn = peer.connect(PREFIX + Online.roomCode, { reliable: true });
       wireConn(conn);
     });
@@ -160,6 +206,7 @@
     });
     peer.on("error", function (err) {
       if (Online.peer !== peer) return;
+      clearJoinTimers(); // error apapun mematikan timer — jangan dobel emit
       if (err && err.type === "peer-unavailable") {
         emit({
           type: "peer-unavailable",
@@ -192,6 +239,7 @@
 
   Online.destroy = function () {
     clearTimeout(reconnectTimer);
+    clearJoinTimers();
     Online.reconnecting = false;
     // Null-kan dulu SEBELUM close/destroy: close conn lama itu async, dan
     // handler "close"-nya harus diabaikan kalau join baru sudah jalan.

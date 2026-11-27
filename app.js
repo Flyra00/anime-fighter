@@ -1,5 +1,6 @@
-// Anime Fighter (web) v4.1 — ala Build An Anime Character.
+// Anime Fighter (web) v4.2 — ala Build An Anime Character.
 // Match lokal (bot/duel 1 layar): 5 ronde, gacha sepasang, pasang sendiri,
+// v4.2: join timeout (12 dtk peer open + 10 dtk conn open) + error case tampilkan COBA LAGI.
 // stat DITAMPILIN selama match (chip di kartu + nilai per slot), timer acak
 // 11-20 dtk, reroll sepasang 100 Cash. Gambar kartu object-fit contain
 // (utuh, tidak kepotong). Battle menu disembunyiin saat match aktif.
@@ -878,7 +879,14 @@
           toast("Room " + ev.code + " tidak ketemu.");
           break;
         case "error":
+          // v4.2: sebelumnya case ini HANYA toast — roomStatus tetap
+          // "Join room ..." dan COBA LAGI tidak muncul, jadi user mentok.
+          // Sekarang error generik (termasuk timeout join) juga menampilkan
+          // status + COBA LAGI untuk tamu, sama seperti peer-unavailable.
           sfx.error();
+          $("roomStatus").className = "hint status-warn";
+          $("roomStatus").textContent = ev.message || "Terjadi error koneksi.";
+          if (!AFOnline.isHost) $("retryJoinBtn").classList.remove("hidden");
           toast(ev.message || "Terjadi error koneksi.");
           break;
         case "left":
