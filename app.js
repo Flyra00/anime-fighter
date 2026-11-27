@@ -1,14 +1,13 @@
-// Anime Fighter (web) v2 — Power Building + SHOWDOWN (ala Build An Anime Character).
-// Spin dapetin karakter, susun 5 karakter (satu per slot stat) jadi 1 fighter.
+// Anime Fighter (web) v2.1 — Power Building + SHOWDOWN (ala Build An Anime Character).
+// TANPA spin/koleksi: tiap slot di-ROLL (karakter acak, rarity ikut rate), roll pertama
+// gratis, reroll 50 Cash. Semua 154 karakter ada di pool roll.
 // Battle = SHOWDOWN: adu AVG SCORE 5 stat, tertinggi menang (atau terendah di Reverse).
 // Save di localStorage.
 (function () {
   "use strict";
 
   var SAVE_KEY = "animeFighterSaveV1";
-  var SPIN_COST = 50;
-  var FREE_SPIN_INTERVAL = 60000; // 1 free spin tiap 60 detik
-  var MAX_FREE_SPINS = 3;
+  var REROLL_COST = 50;
   var WIN_REWARD = 100;
   var LOSE_REWARD = 15;
 
@@ -22,14 +21,13 @@
   ];
 
   var save = loadSave();
-  var selectedSlot = "str"; // slot yang lagi dipilih di Power Building
   var duelSelected = [];    // id karakter dipilih teman buat duel (maks 5, urutan = slot)
   var showdown = null;      // state showdown aktif
   var soundOn = save.soundOn !== false;
 
   // ---------------- SAVE ----------------
   function defaultSave() {
-    return { cash: 200, freeSpins: 3, lastRefill: Date.now(), owned: {}, fighter: null, build: { str: null, spd: null, abi: null, iq: null, dur: null }, wins: 0, battles: 0, soundOn: true };
+    return { cash: 200, build: { str: null, spd: null, abi: null, iq: null, dur: null }, wins: 0, battles: 0, soundOn: true };
   }
   function loadSave() {
     try {
@@ -145,6 +143,32 @@
     if (avg >= 68) return "C";
     return "D";
   }
+  // Roll 1 karakter acak (rarity ikut rate) yang BELUM dipakai di slot lain.
+  function rollFreeChar() {
+    var used = [];
+    SLOT_DEFS.forEach(function (d) { if (save.build[d.key]) used.push(save.build[d.key]); });
+    var c = null, tries = 0;
+    while (tries < 60) {
+      c = rollCharacter();
+      if (used.indexOf(c.id) === -1) break;
+      tries++;
+    }
+    return c;
+  }
+  function rollSlot(key, isReroll) {
+    if (isReroll) {
+      if (save.cash < REROLL_COST) { toast("Cash tidak cukup! Menang battle buat dapet Cash."); return false; }
+      save.cash -= REROLL_COST;
+    }
+    var c = rollFreeChar();
+    if (!c) return false;
+    save.build[key] = c.id;
+    persist();
+    sfx.pop();
+    if (c.rarity === "Legendary" || c.rarity === "Mythical" || c.rarity === "Secret") sfx.levelup();
+    toast("Slot " + slotLabel(key) + ": " + c.name + " [" + c.rarity + "] — " + statOf(c, key) + "!");
+    return true;
+  }
   function renderBuild() {
     var box = $("buildSlots");
     var html = "";
@@ -152,32 +176,35 @@
       var id = save.build[d.key];
       var c = id ? charById(id) : null;
       var v = c ? statOf(c, d.key) : null;
-      html += '<button class="build-slot' + (selectedSlot === d.key ? " selected" : "") + '" data-slot="' + d.key + '">';
+      html += '<div class="build-slot" data-slot="' + d.key + '">';
       if (c) {
         html += imgHtml(c) +
           '<span class="slot-info"><span class="slot-label">' + d.label + ' <span class="slot-sub">(' + d.sub + ')</span></span>' +
           '<span class="slot-char">' + esc(c.name) + '</span>' +
           '<span class="slot-move">Jurus: ' + esc(c.move) + '</span></span>' +
-          '<span class="slot-val">' + v + '</span>';
+          '<span class="slot-val">' + v + '</span>' +
+          '<button class="roll-btn reroll" data-slot="' + d.key + '">REROLL<br>50 CASH</button>';
       } else {
         html += '<span class="slot-info"><span class="slot-label">' + d.label + ' <span class="slot-sub">(' + d.sub + ')</span></span>' +
-          '<span class="slot-empty">+ Kosong — tap slot ini, terus klik karakter di koleksi</span></span>';
+          '<span class="slot-empty">+ Kosong — tap ROLL buat dapetin karakter acak</span></span>' +
+          '<button class="roll-btn" data-slot="' + d.key + '">ROLL<br>GRATIS</button>';
       }
-      html += "</button>";
+      html += "</div>";
     });
     box.innerHTML = html;
-    box.querySelectorAll(".build-slot").forEach(function (el) {
-      el.addEventListener("click", function () {
+    box.querySelectorAll(".roll-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
         sfx.click();
-        selectedSlot = el.getAttribute("data-slot");
-        renderBuild();
+        var key = btn.getAttribute("data-slot");
+        rollSlot(key, !!save.build[key]);
+        renderAll();
       });
     });
 
     var b = buildValues();
     var pb = $("powerBox");
     if (b.filled === 0) {
-      pb.innerHTML = '<p class="hint">Belum ada slot terisi. Tap slot KEKUATAN di atas, terus klik karakter di koleksi lo.</p>';
+      pb.innerHTML = '<p class="hint">Belum ada slot terisi. Tap ROLL di slot KEKUATAN buat dapetin karakter pertama lo.</p>';
       return;
     }
     var names = SLOT_DEFS.map(function (d) {
@@ -196,27 +223,13 @@
       (b.grade ? '<span class="power-grade">Grade ' + b.grade + '</span>' : "") + "</div>" +
       '<div class="muted" style="margin:6px 0 4px">' + esc(names) + "</div>" +
       bars +
-      (b.filled < 5 ? '<p class="hint" style="margin-top:8px">Masih ' + (5 - b.filled) + ' slot kosong. Isi semua biar Power kehitung penuh.</p>' : "");
-  }
-
-  // ---------------- FREE SPIN ----------------
-  function refillFreeSpins() {
-    var now = Date.now();
-    var add = Math.floor((now - save.lastRefill) / FREE_SPIN_INTERVAL);
-    if (add > 0) {
-      save.freeSpins = Math.min(MAX_FREE_SPINS, save.freeSpins + add);
-      save.lastRefill = now - ((now - save.lastRefill) % FREE_SPIN_INTERVAL);
-      persist();
-    }
+      (b.filled < 5 ? '<p class="hint" style="margin-top:8px">Masih ' + (5 - b.filled) + ' slot kosong. Roll semua biar Power kehitung penuh.</p>' : "");
   }
 
   // ---------------- RENDER ----------------
   function renderBadges() {
-    refillFreeSpins();
     $("cashBadge").textContent = "Cash: " + save.cash;
     $("winsBadge").textContent = "Wins: " + save.wins + " (Battle: " + save.battles + ")";
-    $("spinBadge").textContent = "Free Spin: " + save.freeSpins;
-    $("spinBtn").textContent = save.freeSpins > 0 ? "SPIN (GRATIS x" + save.freeSpins + ")" : "SPIN (50 Cash)";
     $("soundBtn").textContent = "Suara: " + (soundOn ? "ON" : "OFF");
   }
 
@@ -234,43 +247,6 @@
       "</div></button>";
   }
 
-  function renderCollection() {
-    var grid = $("collectionGrid");
-    var ids = Object.keys(save.owned).filter(function (id) { return save.owned[id] > 0; });
-    var total = 0; ids.forEach(function (id) { total += save.owned[id]; });
-    $("collectionCount").textContent = "(" + total + " karakter)";
-    if (!ids.length) { grid.innerHTML = '<p class="hint">Koleksi masih kosong. Spin dulu!</p>'; return; }
-    ids.sort(function (a, b) {
-      var ra = ["Common", "Rare", "Epic", "Legendary", "Mythical", "Secret"].indexOf(charById(a).rarity);
-      var rb = ["Common", "Rare", "Epic", "Legendary", "Mythical", "Secret"].indexOf(charById(b).rarity);
-      return rb - ra || charById(a).name.localeCompare(charById(b).name);
-    });
-    grid.innerHTML = ids.map(function (id) {
-      return cardHtml(charById(id), save.owned[id], false);
-    }).join("");
-    grid.querySelectorAll(".card").forEach(function (el) {
-      el.addEventListener("click", function () {
-        sfx.click();
-        var id = el.getAttribute("data-id");
-        var c = charById(id);
-        if (!c) return;
-        var used = slotOfChar(id);
-        if (used === selectedSlot) {
-          save.build[selectedSlot] = null;
-          persist(); toast(c.name + " dilepas dari slot " + slotLabel(selectedSlot) + ".");
-        } else if (used) {
-          toast(c.name + " udah dipakai di slot " + slotLabel(used) + ". Lepas dulu atau pilih karakter lain.");
-          return;
-        } else {
-          save.build[selectedSlot] = id;
-          persist(); sfx.pop();
-          toast(c.name + " masuk slot " + slotLabel(selectedSlot) + " (" + statOf(c, selectedSlot) + ").");
-        }
-        renderAll();
-      });
-    });
-  }
-
   function renderGallery() {
     var q = ($("gallerySearch").value || "").toLowerCase();
     var f = $("galleryFilter").value;
@@ -279,47 +255,19 @@
       if (!q) return true;
       return (c.name + " " + c.anime + " " + c.move).toLowerCase().indexOf(q) !== -1;
     });
-    $("galleryGrid").innerHTML = list.map(function (c) { return cardHtml(c, save.owned[c.id] || 0, false); }).join("") ||
+    $("galleryGrid").innerHTML = list.map(function (c) { return cardHtml(c, 0, false); }).join("") ||
       '<p class="hint">Tidak ketemu. Coba kata lain.</p>';
   }
 
-  function renderAll() { renderBadges(); renderBuild(); renderCollection(); renderGallery(); }
-
-  // ---------------- SPIN ----------------
-  $("spinBtn").addEventListener("click", function () {
-    refillFreeSpins();
-    if (save.freeSpins > 0) save.freeSpins--;
-    else if (save.cash >= SPIN_COST) save.cash -= SPIN_COST;
-    else { toast("Cash tidak cukup! Menang battle buat dapet Cash."); renderBadges(); return; }
-    var c = rollCharacter();
-    save.owned[c.id] = (save.owned[c.id] || 0) + 1;
-    persist();
-    sfx.pop();
-    if (c.rarity === "Legendary") sfx.levelup();
-    var box = $("spinResult");
-    box.innerHTML = '<div style="max-width:280px;margin:0 auto">' + cardHtml(c, save.owned[c.id], false) + "</div>";
-    toast("Dapet: " + c.name + " [" + c.rarity + "] — " + c.move + "!");
-    renderAll();
-  });
-
+  function renderAll() { renderBadges(); renderBuild(); renderGallery(); }
   // ---------------- POWER BUILDING: TOMBOL ----------------
-  $("autoFillBtn").addEventListener("click", function () {
+  $("rollAllBtn").addEventListener("click", function () {
     sfx.click();
-    var ownedIds = Object.keys(save.owned).filter(function (id) { return save.owned[id] > 0; });
-    if (!ownedIds.length) { toast("Koleksi masih kosong. Spin dulu!"); return; }
-    var used = [];
-    SLOT_DEFS.forEach(function (d) {
-      var best = null, bestVal = -1;
-      ownedIds.forEach(function (id) {
-        if (used.indexOf(id) !== -1) return;
-        var v = statOf(charById(id), d.key);
-        if (v > bestVal) { bestVal = v; best = id; }
-      });
-      if (best) { save.build[d.key] = best; used.push(best); }
-    });
-    persist(); sfx.levelup();
+    var empty = SLOT_DEFS.filter(function (d) { return !save.build[d.key]; });
+    if (!empty.length) { toast("Semua slot udah terisi — tap REROLL di slot buat ganti karakter."); return; }
+    empty.forEach(function (d) { rollSlot(d.key, false); });
     var b = buildValues();
-    toast("Fighter terisi otomatis! Power " + (b.avg === null ? "-" : b.avg.toFixed(1)) + " (Grade " + b.grade + ").");
+    toast("Fighter ter-roll! Power " + (b.avg === null ? "-" : b.avg.toFixed(1)) + " (Grade " + b.grade + ").");
     renderAll();
   });
   $("resetBuildBtn").addEventListener("click", function () {
@@ -526,5 +474,4 @@
   // ---------------- START ----------------
   $("galleryCount").textContent = "(" + CHARACTERS.length + ")";
   renderAll();
-  setInterval(renderBadges, 10000);
 })();

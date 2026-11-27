@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Anime Fighter — Spin, Gabung, Battle!</title>
+<title>Anime Fighter — Roll, Build, Showdown!</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,7 +12,6 @@
   <div class="badges">
     <span class="badge" id="cashBadge">Cash: 200</span>
     <span class="badge" id="winsBadge">Wins: 0</span>
-    <span class="badge" id="spinBadge">Free Spin: 3</span>
     <button class="badge btn-small" id="soundBtn">Suara: ON</button>
   </div>
 </header>
@@ -26,28 +25,15 @@
 <main>
   <!-- ============ TAB MAIN ============ -->
   <section id="tab-main" class="tabpage active">
-    <div class="panel spin-panel">
-      <h2>SPIN KARAKTER</h2>
-      <p class="hint">Spin buat dapetin karakter anime. Terus susun 5 karakter jadi 1 fighter di Power Building — satu karakter per slot stat.</p>
-      <button id="spinBtn" class="btn btn-green btn-big">SPIN</button>
-      <div id="spinResult" class="spin-result"></div>
-    </div>
-
     <div class="panel">
       <h2>POWER BUILDING — BUILD FIGHTER</h2>
-      <p class="hint">Tap satu slot, terus klik karakter di koleksi lo buat isi slot itu. Satu karakter cuma bisa isi satu slot. Power fighter = rata-rata 5 stat.</p>
+      <p class="hint">Tap ROLL di tiap slot buat dapetin karakter acak — rarity-nya ikut rate: Common 40%, Rare 28%, Epic 14%, Legendary 11%, Mythical 5%, Secret 2%. Roll pertama tiap slot gratis, reroll 50 Cash. Satu karakter cuma bisa isi satu slot. Power fighter = rata-rata 5 stat.</p>
       <div id="buildSlots"></div>
       <div id="powerBox" class="power-box"></div>
       <div class="build-actions">
-        <button id="autoFillBtn" class="btn btn-purple">ISI OTOMATIS (TERBAIK)</button>
+        <button id="rollAllBtn" class="btn btn-purple">ROLL SEMUA SLOT</button>
         <button id="resetBuildBtn" class="btn btn-gray">RESET</button>
       </div>
-    </div>
-
-    <div class="panel">
-      <h2>KOLEKSI LO <span class="muted" id="collectionCount"></span></h2>
-      <p class="hint">Klik karakter buat isi slot yang lagi dipilih di Power Building.</p>
-      <div id="collectionGrid" class="grid"></div>
     </div>
   </section>
 
