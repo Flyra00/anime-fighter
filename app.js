@@ -300,6 +300,114 @@
     var key = bestSlotFor(c, match.b);
     if (key) match.b[key] = c.id;
   }
+  var rollTimers = [];
+  var rollSeq = 0;
+  function prefersReducedMotion() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+  function clearRollScene() {
+    rollSeq++;
+    while (rollTimers.length) clearTimeout(rollTimers.pop());
+    if (match) match.rolling = false;
+  }
+  function rarityEffects(c) {
+    if (!c) return { wrapCls: "", banner: "" };
+    var r = c.rarity;
+    if (r === "Legendary") return { wrapCls: " vs-rare-glow vs-glow-legendary", banner: '<span class="vs-rare-banner vs-banner-legendary">LEGENDARY</span>' };
+    if (r === "Mythical") return { wrapCls: " vs-rare-glow vs-glow-mythical", banner: '<span class="vs-rare-banner vs-banner-mythical">MYTHICAL</span>' };
+    if (r === "Secret") return { wrapCls: " vs-rare-glow vs-glow-secret", banner: '<span class="vs-rare-banner vs-banner-secret">SECRET</span>' };
+    if (r === "Epic") return { wrapCls: " vs-pulse-light vs-pulse-epic", banner: "" };
+    if (r === "Rare") return { wrapCls: " vs-pulse-light", banner: "" };
+    return { wrapCls: "", banner: "" };
+  }
+  function isHighRarity(c) {
+    return !!(c && (c.rarity === "Legendary" || c.rarity === "Mythical" || c.rarity === "Secret"));
+  }
+  function vsCardWrapHtml(c, isLanding) {
+    var fx = rarityEffects(c);
+    return '<div class="vs-card-wrap' + (isLanding ? " vs-land" : "") + fx.wrapCls + '">' +
+      fx.banner + cardHtml(c, false) + "</div>";
+  }
+  function vsSpinCardHtml(c) {
+    return '<div class="vs-card-wrap vs-spin"><button class="card" type="button" tabindex="-1">' +
+      imgHtml(c) +
+      '<div class="card-body"><div class="rarity-tag">ROLLING...</div>' +
+      '<div class="card-name">' + esc(c.name) + "</div>" +
+      '<div class="card-anime">' + esc(c.anime) + "</div>" +
+      '<div class="card-move">Mengacak petarung...</div>' +
+      '<div class="card-stats"><span class="stat-chip">STR <b>?</b></span><span class="stat-chip">SPD <b>?</b></span><span class="stat-chip">ABI <b>?</b></span><span class="stat-chip">IQ <b>?</b></span><span class="stat-chip">DUR <b>?</b></span></div>' +
+      "</div></button></div>";
+  }
+  function randomSpinChar() {
+    var pool = CHARACTERS.filter(function (c) { return !!c.img; });
+    var arr = pool.length ? pool : CHARACTERS;
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+  function updateSpinSide(sideEl, ch) {
+    if (!sideEl || !ch) return;
+    var im = sideEl.querySelector("img");
+    if (im && ch.img) { im.src = ch.img; im.alt = ch.name; }
+    var nm = sideEl.querySelector(".card-name");
+    if (nm) nm.textContent = ch.name;
+    var an = sideEl.querySelector(".card-anime");
+    if (an) an.textContent = ch.anime;
+  }
+  function startRollScene(onDone) {
+    clearRollScene();
+    if (!match || match.over || !match.roll) return;
+    if (prefersReducedMotion()) {
+      match.rolling = false;
+      renderMatch("landed");
+      if (onDone) onDone();
+      return;
+    }
+    var mySeq = rollSeq;
+    match.rolling = true;
+    renderMatch("spin");
+    var rc = $("rollCard");
+    var sides = rc ? rc.querySelectorAll(".vs-side") : [];
+    var leftSide = sides[0], rightSide = sides[1];
+    var myChar = match.online ? match.pair[match.mySide] : match.pair[match.turn];
+    var oppChar = match.online ? match.pair[match.oppSide] : match.pair[match.turn === "a" ? "b" : "a"];
+    var myLabel = leftSide ? (leftSide.querySelector(".vs-side-label") && leftSide.querySelector(".vs-side-label").textContent) || "LO" : "LO";
+    var oppLabel = rightSide ? (rightSide.querySelector(".vs-side-label") && rightSide.querySelector(".vs-side-label").textContent) || "BOT" : "BOT";
+    var steps = [70, 75, 80, 85, 95, 105, 115, 125, 135, 145, 155, 160]; // sum = 1240ms
+    var elapsed = 0;
+    for (var i = 0; i < steps.length; i++) {
+      elapsed += steps[i];
+      (function (t, isLastLeft) {
+        rollTimers.push(setTimeout(function () {
+          if (!match || match.over || rollSeq !== mySeq) return;
+          if (isLastLeft) {
+            if (leftSide) leftSide.innerHTML = '<div class="vs-side-label">' + esc(myLabel) + "</div>" + vsCardWrapHtml(myChar, true);
+            sfx.pop();
+            if (isHighRarity(myChar)) sfx.levelup();
+            if (rightSide) updateSpinSide(rightSide, randomSpinChar());
+          } else {
+            if (leftSide) updateSpinSide(leftSide, randomSpinChar());
+            if (rightSide) updateSpinSide(rightSide, randomSpinChar());
+          }
+        }, t));
+      })(elapsed, i === steps.length - 1);
+    }
+    // 1 extra tick for opponent card, landing ~200ms after LO (at 1440ms)
+    rollTimers.push(setTimeout(function () {
+      if (!match || match.over || rollSeq !== mySeq) return;
+      if (rightSide) updateSpinSide(rightSide, randomSpinChar());
+    }, elapsed + 110));
+    rollTimers.push(setTimeout(function () {
+      if (!match || match.over || rollSeq !== mySeq) return;
+      if (rightSide) rightSide.innerHTML = '<div class="vs-side-label">' + esc(oppLabel) + "</div>" + vsCardWrapHtml(oppChar, true);
+      var rb = rc ? rc.querySelector(".vs-rolling-banner") : null;
+      if (rb) rb.remove();
+      sfx.oppPlace();
+      if (isHighRarity(oppChar) && !isHighRarity(myChar)) sfx.levelup();
+      match.rolling = false;
+      if (rc) rc.setAttribute("data-roll-key", myChar.id + "|" + oppChar.id);
+      syncMatchControls();
+      if (onDone) onDone();
+    }, elapsed + 200));
+  }
   function beginTurn(side) {
     match.turn = side;
     match.roll = match.pair[side];
@@ -307,8 +415,10 @@
     match.timeLeft = match.online
       ? Math.max(0, Math.ceil((match.endsAt - Date.now()) / 1000))
       : ROUND_TIME_MIN + Math.floor(Math.random() * (ROUND_TIME_MAX - ROUND_TIME_MIN + 1));
-    renderMatch();
-    startTimer();
+    if (match.online) startTimer();
+    startRollScene(function () {
+      if (match && !match.over && !match.online) startTimer();
+    });
   }
   function startTimer() {
     stopTimer();
@@ -397,7 +507,7 @@
         match.roll = match.pair[match.mySide];
         sfx.reroll();
         renderBadges();
-        renderMatch();
+        startRollScene();
         toast("Reroll: " + match.roll.name + " [" + match.roll.rarity + "] — " + match.roll.move + "!");
       } else {
         match.rerollPending = true;
@@ -423,9 +533,11 @@
     match.roll = match.pair[match.turn];
     persist();
     sfx.reroll();
-    if (match.roll.rarity === "Legendary" || match.roll.rarity === "Mythical" || match.roll.rarity === "Secret") sfx.levelup();
+    stopTimer();
     renderBadges();
-    renderMatch();
+    startRollScene(function () {
+      if (match && !match.over && !match.online) startTimer();
+    });
     toast("Reroll: " + match.roll.name + " [" + match.roll.rarity + "] — " + match.roll.move + "!");
   }
   // Panel lawan (LIVE): 5 slot lawan terisi satu per satu tiap ronde,
@@ -454,13 +566,31 @@
     });
     $("oppPanel").innerHTML = html;
   }
-  function renderMatch() {
+  function syncMatchControls() {
+    if (!match) return;
+    var rb = $("rerollBtn");
+    if (rb) {
+      rb.textContent = "REROLL (100 CASH)";
+      rb.disabled = !!match.rolling || save.cash < REROLL_COST ||
+        (match.online && (match.myPlaced || match.oppPlaced || match.rerollPending));
+    }
+    var parts = match.online ? onlineMyParts() : activeParts();
+    var box = $("matchSlots");
+    if (!box) return;
+    box.querySelectorAll(".match-slot").forEach(function (el) {
+      var key = el.getAttribute("data-slot");
+      var occupied = !!(parts && parts[key]);
+      el.disabled = !!match.rolling || occupied || !!(match.online && match.myPlaced);
+    });
+  }
+  function renderMatch(modeHint) {
     if (!match) return;
     if (!match.roll) {
       // Online: menunggu ronde pertama dari host.
       $("roundLabel").textContent = "RONDE " + match.round + "/5";
       $("turnLabel").textContent = "Menunggu host mulai match...";
       $("rollCard").innerHTML = "";
+      $("rollCard").removeAttribute("data-roll-key");
       $("matchSlots").innerHTML = "";
       renderOppPanel();
       return;
@@ -478,7 +608,6 @@
     }
     $("turnLabel").textContent = who;
     renderOppPanel();
-    // VS pair: roll lo vs roll lawan, live. Stat tampil sebagai chip.
     var myLabel, oppLabel;
     if (match.online) {
       myLabel = (window.AFOnline && AFOnline.myName) || "LO";
@@ -489,25 +618,29 @@
     }
     var myChar = match.online ? match.pair[match.mySide] : match.pair[match.turn];
     var oppChar = match.online ? match.pair[match.oppSide] : match.pair[match.turn === "a" ? "b" : "a"];
-    function isRarePulse(c) {
-      return c && (c.rarity === "Legendary" || c.rarity === "Mythical" || c.rarity === "Secret");
+    var rc = $("rollCard");
+    var rollKey = myChar.id + "|" + oppChar.id;
+    if (modeHint === "spin") {
+      rc.removeAttribute("data-roll-key");
+      rc.innerHTML = '<div class="vs-rolling-banner">ROLLING...</div><div class="vs-pair">' +
+        '<div class="vs-side"><div class="vs-side-label">' + esc(myLabel) + "</div>" + vsSpinCardHtml(randomSpinChar()) + "</div>" +
+        '<div class="vs-mid">VS</div>' +
+        '<div class="vs-side"><div class="vs-side-label">' + esc(oppLabel) + "</div>" + vsSpinCardHtml(randomSpinChar()) + "</div>" +
+        "</div>";
+    } else if (modeHint === "landed" || (!match.rolling && rc.getAttribute("data-roll-key") !== rollKey)) {
+      rc.setAttribute("data-roll-key", rollKey);
+      rc.innerHTML = '<div class="vs-pair">' +
+        '<div class="vs-side"><div class="vs-side-label">' + esc(myLabel) + "</div>" + vsCardWrapHtml(myChar, true) + "</div>" +
+        '<div class="vs-mid">VS</div>' +
+        '<div class="vs-side"><div class="vs-side-label">' + esc(oppLabel) + "</div>" + vsCardWrapHtml(oppChar, true) + "</div>" +
+        "</div>";
     }
-    $("rollCard").innerHTML = '<div class="vs-pair">' +
-      '<div class="vs-side"><div class="vs-side-label">' + esc(myLabel) + '</div><div class="vs-card-wrap' + (isRarePulse(myChar) ? " vs-rare-pulse" : "") + '">' + cardHtml(myChar, false) + "</div></div>" +
-      '<div class="vs-mid">VS</div>' +
-      '<div class="vs-side"><div class="vs-side-label">' + esc(oppLabel) + '</div><div class="vs-card-wrap' + (isRarePulse(oppChar) ? " vs-rare-pulse" : "") + '">' + cardHtml(oppChar, false) + "</div></div>" +
-      "</div>";
-    var rb = $("rerollBtn");
-    rb.textContent = "REROLL (100 CASH)";
-    // Online: reroll mati kalau sudah ada yang pasang ronde ini / lagi nunggu jawaban host.
-    rb.disabled = save.cash < REROLL_COST ||
-      (match.online && (match.myPlaced || match.oppPlaced || match.rerollPending));
     var parts = match.online ? onlineMyParts() : activeParts();
     var html = "";
     SLOT_DEFS.forEach(function (d) {
       var id = parts[d.key];
       var c = id ? charById(id) : null;
-      html += '<button class="build-slot match-slot" data-slot="' + d.key + '"' + ((c || (match.online && match.myPlaced)) ? " disabled" : "") + ">";
+      html += '<button class="build-slot match-slot" data-slot="' + d.key + '"' + ((match.rolling || c || (match.online && match.myPlaced)) ? " disabled" : "") + ">";
       if (c) {
         html += imgHtml(c) +
           '<span class="slot-info"><span class="slot-label">' + d.label + ' <span class="slot-sub">(' + d.sub + ')</span></span>' +
@@ -527,14 +660,16 @@
       el.addEventListener("click", function () {
         sfx.click();
         placeRoll(el.getAttribute("data-slot"));
-        renderAll();
+        renderBadges();
       });
     });
+    syncMatchControls();
   }
   function finishMatch(partsA, partsB) {
     if (!match) return;
     match.over = true;
     stopTimer();
+    clearRollScene();
     resetMatchBackBtn();
     var a = partsA || match.a, b = partsB || match.b, mode = match.mode, rev = match.reverse;
     var mySide = match.mySide || "a";
@@ -582,8 +717,8 @@
       sdFighterHtml("LAWAN", showdown.b, b, showdown.revealed) +
       "</div>";
   }
-  function sdRevealGroupHtml(title, parts, oppParts, isWinner, isLoser, baseIdx) {
-    var cls = "sd-team" + (isWinner ? " sd-team-win" : (isLoser ? " sd-team-lose" : ""));
+  function sdRevealGroupHtml(title, parts, oppParts, isWinner, isLoser, baseIdx, sideCls) {
+    var cls = "sd-team " + sideCls + (isWinner ? " sd-team-win" : (isLoser ? " sd-team-lose" : ""));
     var cards = "";
     SLOT_DEFS.forEach(function (d, i) {
       var c = charById(parts[d.key]);
@@ -606,8 +741,9 @@
   }
   function sdRevealHtml(winner) {
     return '<div class="sd-reveal">' +
-      sdRevealGroupHtml("TIM LO", showdown.a, showdown.b, winner === "A", winner === "B", 0) +
-      sdRevealGroupHtml("LAWAN", showdown.b, showdown.a, winner === "B", winner === "A", 5) +
+      '<div class="sd-clash-flash"></div>' +
+      sdRevealGroupHtml("TIM LO", showdown.a, showdown.b, winner === "A", winner === "B", 0, "sd-team-left") +
+      sdRevealGroupHtml("LAWAN", showdown.b, showdown.a, winner === "B", winner === "A", 5, "sd-team-right") +
       '</div>';
   }
   $("showdownBtn").addEventListener("click", function () {
@@ -626,15 +762,26 @@
     if (winner === "draw") {
       msg = "SERI! AVG sama-sama " + a.avg.toFixed(1) + ". +50 Cash.";
       if (showdown.mode === "bot" || showdown.mode === "online") save.cash += DRAW_REWARD;
-      sfx.draw();
     } else if (winner === "A") {
       msg = "MENANG! " + a.avg.toFixed(1) + " vs " + b.avg.toFixed(1) + ". +100 Cash, +1 Win!";
       if (showdown.mode === "bot" || showdown.mode === "online") { save.cash += WIN_REWARD; save.wins++; }
-      sfx.win(); sfx.coin();
     } else {
       msg = "KALAH. " + a.avg.toFixed(1) + " vs " + b.avg.toFixed(1) + ". +15 Cash.";
       if (showdown.mode === "bot" || showdown.mode === "online") save.cash += LOSE_REWARD;
-      sfx.lose();
+    }
+    if (prefersReducedMotion()) {
+      sfx.pop();
+      if (winner === "draw") sfx.draw();
+      else if (winner === "A") { sfx.win(); sfx.coin(); }
+      else sfx.lose();
+    } else {
+      setTimeout(function () { if (showdown && showdown.over) sfx.pop(); }, 650);
+      setTimeout(function () {
+        if (!showdown || !showdown.over) return;
+        if (winner === "draw") sfx.draw();
+        else if (winner === "A") { sfx.win(); sfx.coin(); }
+        else sfx.lose();
+      }, 700);
     }
     if (showdown.mode === "bot" || showdown.mode === "online") save.battles++;
     persist();
@@ -665,6 +812,7 @@
   function closeMatchUI(quiet) {
     sfx.click();
     stopTimer();
+    clearRollScene();
     resetMatchBackBtn();
     var isOnline = (match && match.online) || (showdown && showdown.mode === "online");
     if (isOnline && !quiet && window.AFOnline) { onlineLeaving = true; AFOnline.leave(); }
@@ -1376,6 +1524,28 @@
   }
 
   // ---------------- START ----------------
+  (function reorderMatchLayout() {
+    var mp = $("matchPanel"), oppTitle = $("oppTitle"), oppPanel = $("oppPanel");
+    var rc = $("rollCard"), rb = $("rerollBtn"), ms = $("matchSlots"), back = $("matchBackBtn");
+    if (!mp || !oppTitle || !oppPanel || !rc || !rb || !ms || !back) return;
+    var slotsTitle = ms.previousElementSibling;
+    mp.insertBefore(rc, oppTitle);
+    mp.insertBefore(rb, oppTitle);
+    var cols = document.createElement("div");
+    cols.id = "matchCols";
+    cols.className = "match-cols";
+    var colSlots = document.createElement("div");
+    colSlots.className = "match-col-slots";
+    if (slotsTitle) colSlots.appendChild(slotsTitle);
+    colSlots.appendChild(ms);
+    var colOpp = document.createElement("div");
+    colOpp.className = "match-col-opp";
+    colOpp.appendChild(oppTitle);
+    colOpp.appendChild(oppPanel);
+    cols.appendChild(colSlots);
+    cols.appendChild(colOpp);
+    mp.insertBefore(cols, back);
+  })();
   settingsInit(); // v4.6: modal pengaturan + musik latar + background
   $("galleryCount").textContent = "(" + CHARACTERS.length + ")";
   onlineSetupHandlers();
