@@ -837,7 +837,7 @@
     var p = cb.pairs[cb.pairIdx];
     $("battleBox").innerHTML =
       '<div class="cb-head"><span>ADU KARTU ' + (cb.pairIdx + 1) + '/5 — ' + esc(p.label) + '</span>' +
-      '<span class="cb-score">LO ' + cb.scoreA + ' – ' + cb.scoreB + ' LAWAN</span></div>' +
+      '<span class="cb-score" id="cbScore">LO ' + cb.scoreA + ' – ' + cb.scoreB + ' LAWAN</span></div>' +
       '<div class="cb-duel">' +
       cbFighterHtml(p.a, "A", p.a.hp, p.a.hp) +
       '<div class="vs">VS</div>' +
@@ -948,6 +948,10 @@
     if (!cb || cb.over) return;
     cb.over = true;
     $("skipBattleBtn").classList.add("hidden");
+    // Pill skor di frame duel terakhir masih nunjukin skor awal duel ke-5 —
+    // update ke skor akhir supaya nggak beda sama banner hasil.
+    var pill = $("cbScore");
+    if (pill) pill.textContent = "LO " + cb.scoreA + " – " + cb.scoreB + " LAWAN";
     var a = partsStats(cb.a), b = partsStats(cb.b);
     var winner;
     if (cb.reverse) winner = cb.scoreA < cb.scoreB ? "A" : "B"; // reverse: skor duel TERENDAH menang
