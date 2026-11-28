@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anime Fighter — Roll, Build, Showdown!</title>
+<title>Anime Fighter — Roll, Build, Battle!</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -29,19 +29,19 @@
     <div class="panel">
       <h2>CARA MAIN</h2>
       <ol class="rules-list">
-        <li>Buka tab BATTLE, pilih SHOWDOWN VS BOT, DUEL TEMAN, atau 1VS1 ONLINE.</li>
+        <li>Buka tab BATTLE, pilih ADU KARTU VS BOT, DUEL TEMAN, atau 1VS1 ONLINE.</li>
         <li>Tiap ronde, lo dan lawan gacha 1 karakter — ditampilin berdua kayak VS, live kayak di Roblox.</li>
         <li>Lo pilih sendiri karakter lo masuk slot mana: Kekuatan, Kecepatan, Kemampuan, Kepintaran, atau Ketahanan. Satu karakter cuma bisa isi satu slot. Lawan juga masang karakternya di saat yang sama — keliatan live di panel lawan.</li>
         <li>Stat angka (STR, SPD, ABI, IQ, DUR) tampil di kartu dan tiap slot selama match — pakai angkanya buat milih slot terbaik!</li>
         <li>Tiap ronde ada timer acak 11–20 detik — kalau habis, karakter otomatis masuk slot acak yang masih kosong.</li>
-        <li>Reroll sepasang karakter ronde itu: 100 Cash. Menang battle: +100 Cash, +1 Win. Kalah: +15 Cash. Seri: +50 Cash.</li>
-        <li>Setelah 5 ronde, SHOWDOWN: rata-rata 5 stat diadu, tertinggi menang (atau terendah di mode Reverse).</li>
+        <li>Reroll sepasang karakter ronde itu: 100 Cash. Menang battle: +100 Cash, +1 Win. Kalah: +15 Cash.</li>
+        <li>Setelah 5 ronde, ADU KARTU: 5 duel sepasang, HP berkurang tiap pukulan (damage kayak Roblox), skor duel terbanyak menang (atau tersedikit di mode Reverse).</li>
         <li>1VS1 ONLINE (beda device): di tab BATTLE tap 1VS1 ONLINE — host BUAT ROOM terus share kode/link ke teman, teman GABUNG ROOM pakai kode itu. Main di HP masing-masing, 5 ronde kayak biasa.</li>
       </ol>
     </div>
   </section>
 
-  <!-- ============ TAB BATTLE (SHOWDOWN) ============ -->
+  <!-- ============ TAB BATTLE (ADU KARTU) ============ -->
   <section id="tab-battle" class="tabpage">
     <div class="panel">
       <div id="motionBanner" class="motion-banner hidden">
@@ -50,8 +50,8 @@
         <button id="dismissAnimBannerBtn" class="btn btn-gray btn-small">NANTI</button>
       </div>
       <div class="battle-intro">
-        <h2>SHOWDOWN</h2>
-        <p class="hint">Match dimulai, baru bangun fighter — tiap ronde gacha 1 karakter, lo yang pilih masuk slot mana. 5 ronde, terus SHOWDOWN adu rata-rata stat, kayak di Roblox-nya.</p>
+        <h2>ADU KARTU</h2>
+        <p class="hint">Match dimulai, baru bangun fighter — tiap ronde gacha 1 karakter, lo yang pilih masuk slot mana. 5 ronde, terus ADU KARTU: kartu lo lawan kartu bot sepasang demi sepasang, kayak di Roblox-nya.</p>
       </div>
       <div id="battleMenu" class="battle-menu">
         <label class="mode-label" for="battleMode">Mode:</label>
@@ -59,7 +59,7 @@
           <option value="normal">Normal — AVG tertinggi menang</option>
           <option value="reverse">Reverse — AVG TERENDAH menang</option>
         </select>
-        <button id="botBtn" class="btn btn-red btn-big">SHOWDOWN VS BOT</button>
+        <button id="botBtn" class="btn btn-red btn-big">ADU KARTU VS BOT</button>
         <button id="duelBtn" class="btn btn-blue btn-big">DUEL TEMAN (1 LAYAR)</button>
         <button id="onlineBtn" class="btn btn-purple btn-big btn-primary">1VS1 ONLINE (BEDA DEVICE)</button>
       </div>
@@ -88,7 +88,7 @@
       </div>
 
       <div id="matchPanel" class="match-panel hidden">
-        <h3 id="matchTitle">SHOWDOWN VS BOT</h3>
+        <h3 id="matchTitle">ADU KARTU VS BOT</h3>
         <div class="match-top"><span id="roundLabel">RONDE 1/5</span><span id="timerLabel">Waktu: 15 dtk</span></div>
         <p class="hint" id="turnLabel"></p>
         <h3 id="oppTitle">LAWAN — LIVE</h3>
@@ -101,11 +101,11 @@
       </div>
 
       <div id="arena" class="arena hidden">
-        <div id="showdownBox"></div>
+        <div id="battleBox"></div>
         <div class="attack-row" style="margin-top:12px">
-          <button id="showdownBtn" class="btn btn-red btn-big">SHOWDOWN!</button>
+          <button id="skipBattleBtn" class="btn btn-gray btn-big hidden">LEWATI BATTLE</button>
         </div>
-        <div id="showdownResult"></div>
+        <div id="battleResult"></div>
         <button id="backBtn" class="btn btn-gray" style="margin-top:12px">KEMBALI</button>
       </div>
     </div>
@@ -179,7 +179,6 @@
   </div>
 </div>
 
-<div id="clashFlash" class="clash-flash"></div>
 <div id="toast" class="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>

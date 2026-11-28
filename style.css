@@ -432,20 +432,6 @@ input[type="text"]:focus, input[type="url"]:focus, select:focus {
 .motion-banner.hidden { display: none; }
 .motion-banner span { flex: 1; min-width: 160px; }
 
-/* ---------- CLASH FLASH FULL-LAYAR (v4.9.3) ----------
-   .panel pakai overflow:hidden, jadi flash di dalam .sd-reveal terpotong.
-   Overlay ini fixed di luar panel, menutupi seluruh viewport. */
-.clash-flash {
-  position: fixed; inset: 0; z-index: 60; background: #FFFFFF;
-  pointer-events: none; opacity: 0;
-}
-.clash-flash.active { animation: clashFlashBurst 320ms ease-out both; }
-@keyframes clashFlashBurst {
-  0% { opacity: 0; }
-  12% { opacity: 0.78; }
-  100% { opacity: 0; }
-}
-
 /* ---------- ROOM ONLINE 1V1 ---------- */
 .room-panel {
   background: #FFFFFF; border: 3px solid #111;
@@ -500,26 +486,12 @@ input[type="text"]:focus, input[type="url"]:focus, select:focus {
   font-weight: 900; font-size: 15px; color: #111; background: #FFEB3B;
   border: 2px solid #111; border-radius: 999px; padding: 2px 10px;
 }
-.stat-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 7px; color: #111; }
-.stat-row .stat-name { width: 92px; font-weight: 800; flex-shrink: 0; }
-.stat-row .stat-bar { flex: 1; height: 12px; background: #FFF6E5; border: 2px solid #111; border-radius: 999px; overflow: hidden; }
-.stat-row .stat-fill { display: block; height: 100%; background: #22C55E; }
-.stat-row .stat-num { width: 28px; text-align: right; font-weight: 900; flex-shrink: 0; }
-
-/* ---------- SHOWDOWN + 5+5 REVEAL (v4.9) ---------- */
+/* ---------- ADU KARTU + LAYAR AKHIR (v4.11, ganti showdown) ---------- */
 .mode-label { font-weight: 900; font-size: 14px; color: #111; }
 .battle-menu select {
   width: 100%; padding: 12px; border-radius: 10px; border: 3px solid #111;
   background: #FFFFFF; color: #111; font-size: 15px; font-weight: 700; margin-bottom: 10px;
 }
-.sd-wrap { display: flex; gap: 8px; align-items: stretch; }
-.sd-fighter {
-  flex: 1; min-width: 0; background: #FFF6E5; border: 3px solid #111;
-  border-radius: 12px; padding: 10px; box-shadow: 4px 4px 0 #111;
-}
-.sd-title { font-weight: 900; font-size: 14px; color: #111; letter-spacing: .5px; margin-bottom: 4px; }
-.sd-avg { font-size: 30px; font-weight: 900; color: #111; text-align: center; margin-top: 8px; }
-.sd-grade { font-size: 13px; font-weight: 800; color: #374151; text-align: center; }
 @keyframes clashFromLeft {
   from { opacity: 0; transform: translateX(-140px) perspective(600px) rotateY(70deg); }
   to { opacity: 1; transform: translateX(0) perspective(600px) rotateY(0deg); }
@@ -527,19 +499,6 @@ input[type="text"]:focus, input[type="url"]:focus, select:focus {
 @keyframes clashFromRight {
   from { opacity: 0; transform: translateX(140px) perspective(600px) rotateY(-70deg); }
   to { opacity: 1; transform: translateX(0) perspective(600px) rotateY(0deg); }
-}
-@keyframes clashFlash {
-  0% { opacity: 0; }
-  30% { opacity: 0.85; }
-  100% { opacity: 0; }
-}
-@keyframes clashShake {
-  0%, 100% { transform: translateX(0); }
-  17% { transform: translateX(-5px); }
-  33% { transform: translateX(5px); }
-  50% { transform: translateX(-5px); }
-  67% { transform: translateX(5px); }
-  83% { transform: translateX(-3px); }
 }
 @keyframes sdPopIn {
   0% { opacity: 0; transform: scale(0.72); }
@@ -550,26 +509,19 @@ input[type="text"]:focus, input[type="url"]:focus, select:focus {
   from { opacity: 1; }
   to { opacity: 0.55; }
 }
-/* v4.9.3: koreografi clash — fly-in 0–~500ms, hitstop 500–560ms,
-   impak 560–880ms (flash + shake + punch), reveal 940ms. */
+/* Layar akhir adu kartu (v4.11): banner + tim LO + tombol deck lawan. */
 .sd-result {
   background: #FFEB3B; color: #111; border: 3px solid #111; border-radius: 12px;
   padding: 14px; margin-top: 12px; box-shadow: 4px 4px 0 #111;
   font-size: 16px; font-weight: 900; text-align: center; line-height: 1.5;
-  animation: sdPopIn 350ms cubic-bezier(0.34, 1.56, 0.64, 1) 940ms both;
-}
-.sd-reveal {
-  position: relative; overflow: hidden;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;
-  padding: 2px;
-  animation: clashShake 300ms ease-in-out 560ms both;
+  animation: sdPopIn 350ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms both;
 }
 .sd-team {
   background: #FFFFFF; border: 3px solid #111; border-radius: 12px;
   padding: 10px; box-shadow: 4px 4px 0 #111;
 }
 .sd-team-win { border-color: #F59E0B; box-shadow: 4px 4px 0 #111, 0 0 0 2px #F59E0B; }
-.sd-team-lose { animation: loseDim 250ms ease 940ms both; }
+.sd-team-lose { animation: loseDim 250ms ease 150ms both; }
 .sd-team-head {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
   margin-bottom: 8px; font-weight: 900; font-size: 13px; color: #111;
@@ -577,7 +529,7 @@ input[type="text"]:focus, input[type="url"]:focus, select:focus {
 .sd-win-chip {
   background: #F59E0B; color: #111; border: 2px solid #111; border-radius: 999px;
   padding: 2px 8px; font-size: 10px; font-weight: 900; letter-spacing: .5px;
-  animation: sdPopIn 350ms cubic-bezier(0.34, 1.56, 0.64, 1) 940ms both;
+  animation: sdPopIn 350ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms both;
 }
 .sd-team-cards {
   display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
@@ -613,6 +565,82 @@ input[type="text"]:focus, input[type="url"]:focus, select:focus {
   background: #FFEB3B; color: #111; border: 1.5px solid #111; border-radius: 5px;
   padding: 1px 6px; font-size: 11px; font-weight: 900;
 }
+
+/* ---------- ADU KARTU: duel sepasang (v4.11) ---------- */
+.cb-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  font-weight: 900; font-size: 14px; color: #111; margin-bottom: 10px;
+}
+.cb-score {
+  background: #FFEB3B; border: 2px solid #111; border-radius: 999px;
+  padding: 2px 10px; font-size: 13px; font-weight: 900; color: #111; white-space: nowrap;
+}
+.cb-duel { display: flex; gap: 8px; align-items: stretch; }
+.cb-duel .vs { align-self: center; flex-shrink: 0; }
+.cb-fighter {
+  flex: 1; min-width: 0; background: #FFF6E5; border: 3px solid #111;
+  border-radius: 12px; padding: 8px; box-shadow: 4px 4px 0 #111; text-align: center;
+}
+.cb-fighter img, .cb-fighter .img-fallback {
+  width: 100%; height: 150px; object-fit: cover; object-position: top;
+  border-radius: 8px; border: 2px solid #111; display: block; background: #FFF;
+}
+.cb-fighter .img-fallback {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 900; color: #111;
+}
+.cb-name {
+  font-weight: 900; font-size: 13px; color: #111; margin-top: 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cb-hp { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.cb-hpbar {
+  flex: 1; height: 12px; background: #FFF; border: 2px solid #111;
+  border-radius: 999px; overflow: hidden;
+}
+.cb-hpfill { display: block; height: 100%; background: #22C55E; transition: width 280ms ease; }
+.cb-hpfill.cb-low { background: #FF5252; }
+.cb-hpnum { width: 34px; text-align: right; font-weight: 900; font-size: 12px; color: #111; flex-shrink: 0; }
+.cb-dmgs { position: relative; height: 0; }
+.cb-dmg {
+  position: absolute; top: -10px; font-weight: 900; font-size: 18px; color: #FF5252;
+  text-shadow: 1px 1px 0 #111; pointer-events: none;
+  animation: cbDmgFloat 600ms ease-out both;
+}
+.cb-dmg-A { left: 22%; }
+.cb-dmg-B { right: 22%; }
+@keyframes cbDmgFloat {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-26px); }
+}
+.cb-fighter.cb-lunge-a { animation: cbLungeA 160ms ease-out; }
+.cb-fighter.cb-lunge-b { animation: cbLungeB 160ms ease-out; }
+@keyframes cbLungeA {
+  0% { transform: translateX(0); }
+  40% { transform: translateX(12px); }
+  100% { transform: translateX(0); }
+}
+@keyframes cbLungeB {
+  0% { transform: translateX(0); }
+  40% { transform: translateX(-12px); }
+  100% { transform: translateX(0); }
+}
+.cb-fighter.cb-shake { animation: cbShake 160ms ease-in-out; }
+@keyframes cbShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-3px); }
+}
+.cb-fighter.cb-ko { opacity: 0.45; filter: grayscale(1); transform: rotate(-3deg); }
+.cb-fighter.cb-win { box-shadow: 4px 4px 0 #111, 0 0 0 3px #22C55E; }
+.cb-sub {
+  text-align: center; font-size: 12.5px; font-weight: 700; color: #374151; margin-top: 8px;
+}
+.cb-deckrow { margin-top: 12px; }
+.cb-deckrow .btn { width: 100%; }
+#oppDeckBox:not(:empty) { margin-top: 12px; }
+
 .duel-slots { margin: 12px 0; }
 .duel-slot-row {
   display: flex; justify-content: space-between; gap: 10px;
@@ -742,9 +770,6 @@ body:has(#matchPanel:not(.hidden)) .bg-layer.is-art::after {
   .vs-pair .card .card-stats { margin-top: 4px; gap: 2px; }
   .vs-pair .stat-chip { font-size: 9.5px; padding: 2px 3px; }
   #rerollBtn { margin-bottom: 6px; padding: 10px 12px; min-height: 44px; font-size: 13.5px; }
-  .sd-wrap { flex-direction: column; gap: 10px; }
-  .sd-wrap .vs { justify-content: center; font-size: 16px; padding: 2px 0; }
-  .sd-reveal { grid-template-columns: 1fr; }
   .sd-team-cards { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
   .gallery-tools { flex-direction: column; }
   .gallery-tools select { width: 100%; }
@@ -785,7 +810,7 @@ body:has(#matchPanel:not(.hidden)) .bg-layer.is-art::after {
 /* v4.9.3: motion gating via class body.reduce-motion, BUKAN media query
    blanket — supaya toggle "Efek animasi" di dalam game bisa menyalakan
    efek walau Windows mengaktifkan "reduce motion". Hanya animasi
-   roll/clash yang dimatikan; elemen tetap tampil di posisi akhirnya. */
+   roll/adu kartu yang dimatikan; elemen tetap tampil di posisi akhirnya. */
 body.reduce-motion .vs-rolling-banner,
 body.reduce-motion .vs-card-wrap.vs-land .card,
 body.reduce-motion .vs-card-wrap.vs-pulse-light::after,
@@ -796,9 +821,11 @@ body.reduce-motion .sd-team-left .sd-mini,
 body.reduce-motion .sd-team-right .sd-mini,
 body.reduce-motion .sd-result,
 body.reduce-motion .sd-win-chip,
-body.reduce-motion .sd-reveal,
-body.reduce-motion .clash-flash,
-body.reduce-motion .sd-team-lose {
+body.reduce-motion .sd-team-lose,
+body.reduce-motion .cb-dmg,
+body.reduce-motion .cb-lunge-a,
+body.reduce-motion .cb-lunge-b,
+body.reduce-motion .cb-shake {
   animation: none !important;
 }
 body.reduce-motion .sd-team-lose { opacity: 0.55 !important; }

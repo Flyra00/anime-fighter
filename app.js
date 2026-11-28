@@ -13,7 +13,11 @@
 // kode/link. Host = wasit: gacha sepasang tiap ronde, pegang timer (endsAt),
 // auto-place buat yang belum pasang. Tamu tidak auto-place sendiri — state
 // ronde selalu datang dari host (pesan `round` bawa parts kedua sisi).
-// SHOWDOWN: adu AVG SCORE 5 stat (reveal di sini). Save di localStorage.
+// SHOWDOWN: dihapus v4.11 — diganti ADU KARTU: 5 duel sepasang, HP bar +
+// rumus damage Roblox (max(2, ATK - floor(DEF/3))), pemenang = skor duel.
+// Layar akhir nunjukin TIM LO; deck lawan di balik tombol. Save di localStorage.
+// v4.11: showdown dihapus -> adu kartu (HP + damage Roblox) + layar akhir
+// tim LO + tombol LIHAT DECK LAWAN + LEWATI. Rarity dari AVG (v4.10) tetap.
 (function () {
   "use strict";
 
@@ -25,7 +29,6 @@
   // mikir tamu online — host menambahkan buffer ini ke endsAt tiap ronde.
   var WIN_REWARD = 100;
   var LOSE_REWARD = 15;
-  var DRAW_REWARD = 50;
 
   // 5 slot stat — nama Indonesia seperti di game Roblox-nya.
   var SLOT_DEFS = [
@@ -40,7 +43,8 @@
   var soundOn = save.soundOn !== false;
   var match = null;     // match aktif: {mode, reverse, round, turn, a, b, pair, roll, timeLeft, timerId, over,
                           //   online, mySide, oppSide, myPlaced, oppPlaced, endsAt, startedAt}
-  var showdown = null;  // state showdown aktif
+  var cardBattle = null; // state adu kartu aktif
+  var battleSeq = 0;     // token pembatal timer adu kartu
 
   // ---------------- SAVE ----------------
   function defaultSave() {
@@ -125,7 +129,7 @@
     tick: function () { tone(880, 0.04, "square", 0.07, 0); },
     rollTick: function (step) { tone(480 + (step || 0) * 22, 0.05, "square", 0.08); },
     reroll: function () { noiseBurst(0.12, 0.14, 2000); tone(380, 0.12, "sine", 0.14, 0.04, 820); },
-    showdown: function () { var n = [392, 523, 659, 784]; for (var i = 0; i < n.length; i++) tone(n[i], 0.1, "sawtooth", 0.1, i * 0.07); },
+    battle: function () { var n = [392, 523, 659, 784]; for (var i = 0; i < n.length; i++) tone(n[i], 0.1, "sawtooth", 0.1, i * 0.07); },
     roomJoin: function () { tone(659, 0.09, "sine", 0.16, 0); tone(988, 0.14, "sine", 0.16, 0.09); },
     matchStart: function () { var n = [523, 659, 784]; for (var i = 0; i < n.length; i++) tone(n[i], 0.12, "triangle", 0.16, i * 0.08); },
     error: function () { tone(220, 0.12, "sawtooth", 0.12, 0); tone(180, 0.16, "sawtooth", 0.12, 0.12); }
@@ -275,12 +279,12 @@
       oppSide: (mode === "online" && window.AFOnline) ? (AFOnline.isHost ? "b" : "a") : "b",
       myPlaced: false, oppPlaced: false, endsAt: 0, startedAt: Date.now()
     };
-    showdown = null;
+    cardBattle = null; battleSeq++;
     $("battleMenu").classList.add("hidden");
     $("roomPanel").classList.add("hidden");
     $("arena").classList.add("hidden");
     $("matchPanel").classList.remove("hidden");
-    $("matchTitle").textContent = mode === "bot" ? "SHOWDOWN VS BOT" : (mode === "duel" ? "DUEL TEMAN (1 LAYAR)" : "1VS1 ONLINE");
+    $("matchTitle").textContent = mode === "bot" ? "ADU KARTU VS BOT" : (mode === "duel" ? "DUEL TEMAN (1 LAYAR)" : "1VS1 ONLINE");
     sfx.matchStart();
     renderBadges();
     if (mode === "online") return; // ronde pertama datang dari host (pesan round)
@@ -770,47 +774,150 @@
     var mySide = match.mySide || "a";
     match = null;
     $("matchPanel").classList.add("hidden");
-    startShowdown(a, b, mode, rev, mySide);
+    startCardBattle(a, b, mode, rev, mySide);
   }
 
-  // ---------------- SHOWDOWN (adu AVG score, ala BAAC) ----------------
-  function startShowdown(aParts, bParts, mode, reverse, mySide) {
+  // ---------------- ADU KARTU (ala Roblox: HP bar + rumus damage) ----------------
+  // Showdown dihapus (v4.11): setelah ronde 5, kartu langsung diadu sepasang
+  // demi sepasang — HP berkurang per pukulan, yang HP-nya habis duluan kalah.
+  // Damage = max(2, ATK penyerang - floor(DEF target / 3)) — rumus Roblox.
+  // Urutan pukulan dihitung dulu dari stat combat (deterministik: hasil sama
+  // di kedua device online, cuma timing tampilannya lokal).
+  var BLOW_MS = 300;       // jeda antar pukulan
+  var PAIR_GAP_MS = 700;   // jeda antar duel kartu
+  function battleDmg(att, def) { return Math.max(2, att.atk - Math.floor(def.def / 3)); }
+  // Siapa mukul duluan: SPD combat tertinggi; seri -> ATK tertinggi; seri
+  // lagi -> id terkecil. Urutan TOTAL atas kartu (bukan atas sisi A/B) supaya
+  // kedua device online menghitung urutan pukulan yang SAMA walau sisinya
+  // ditukar — "A" di host = "B" di tamu.
+  function firstStrikerIsA(a, b) {
+    if (a.spd !== b.spd) return a.spd > b.spd;
+    if (a.atk !== b.atk) return a.atk > b.atk;
+    return a.id < b.id;
+  }
+  function simPairBlows(a, b) {
+    var hpA = a.hp, hpB = b.hp, blows = [], turnA = firstStrikerIsA(a, b);
+    while (hpA > 0 && hpB > 0) {
+      if (turnA) { var d = battleDmg(a, b); hpB -= d; blows.push({ side: "A", dmg: d, hpA: hpA, hpB: hpB }); }
+      else { var d2 = battleDmg(b, a); hpA -= d2; blows.push({ side: "B", dmg: d2, hpA: hpA, hpB: hpB }); }
+      turnA = !turnA;
+    }
+    return { blows: blows, winner: hpA > 0 ? "A" : "B" };
+  }
+  function startCardBattle(aParts, bParts, mode, reverse, mySide) {
     // "A" = fighter LOKAL (tamu online = sisi b, jadi ditukar supaya kiri
     // selalu fighter lo dan kanan selalu lawan — menang/kalah tidak kebalik).
     var local = mySide === "b" ? bParts : aParts;
     var opp = mySide === "b" ? aParts : bParts;
-    showdown = { a: local, b: opp, mode: mode, reverse: reverse, revealed: false, over: false };
-    $("arena").classList.remove("hidden");
-    $("showdownResult").innerHTML = "";
-    $("showdownBtn").textContent = "SHOWDOWN!";
-    $("showdownBtn").classList.remove("hidden");
-    sfx.showdown();
-    renderShowdown();
-  }
-  function sdFighterHtml(title, parts, st, showVals) {
-    var names = partsNames(parts);
-    var bars = "";
-    SLOT_DEFS.forEach(function (d) {
-      var v = st.vals[d.key];
-      bars += '<div class="stat-row"><span class="stat-name">' + d.label + '</span>' +
-        '<span class="stat-bar"><span class="stat-fill" style="width:' + (showVals ? v : 0) + '%"></span></span>' +
-        '<span class="stat-num">' + (showVals ? v : "?") + '</span></div>';
+    var pairs = SLOT_DEFS.map(function (d) {
+      var ca = charById(local[d.key]), cb = charById(opp[d.key]);
+      return { key: d.key, label: d.label, a: ca, b: cb, sim: simPairBlows(ca, cb), scored: false };
     });
-    return '<div class="sd-fighter"><div class="sd-title">' + title + '</div>' +
-      '<div class="muted" style="font-size:12px;margin-bottom:6px">' + esc(names) + '</div>' +
-      bars +
-      '<div class="sd-avg">' + (showVals ? st.avg.toFixed(1) : "?") + '</div>' +
-      '<div class="sd-grade">' + (showVals ? "Grade " + st.grade : "???") + '</div></div>';
+    cardBattle = { a: local, b: opp, mode: mode, reverse: reverse,
+      pairs: pairs, pairIdx: 0, scoreA: 0, scoreB: 0, seq: ++battleSeq,
+      over: false, deckShown: false };
+    $("arena").classList.remove("hidden");
+    $("battleResult").innerHTML = "";
+    $("skipBattleBtn").classList.remove("hidden");
+    sfx.battle();
+    playPair(0);
   }
-  function renderShowdown() {
-    if (!showdown) return;
-    var a = partsStats(showdown.a), b = partsStats(showdown.b);
-    $("showdownBox").innerHTML =
-      '<div class="sd-wrap">' +
-      sdFighterHtml("FIGHTER LO", showdown.a, a, true) +
+  function cbFighterHtml(c, side, hp, maxHp) {
+    var pct = Math.max(0, Math.round(hp / maxHp * 100));
+    return '<div class="cb-fighter" id="cbCard' + side + '">' +
+      (c ? imgHtml(c) : '<div class="img-fallback" style="background:#FFF6E5">?</div>') +
+      '<div class="cb-name">' + esc(c ? c.name : "-") + '</div>' +
+      '<div class="cb-hp"><span class="cb-hpbar"><span class="cb-hpfill" id="cbBar' + side + '" style="width:' + pct + '%"></span></span>' +
+      '<span class="cb-hpnum" id="cbHp' + side + '">' + Math.max(0, hp) + '</span></div>' +
+      '</div>';
+  }
+  function renderBattleFrame() {
+    var cb = cardBattle;
+    if (!cb) return;
+    var p = cb.pairs[cb.pairIdx];
+    $("battleBox").innerHTML =
+      '<div class="cb-head"><span>ADU KARTU ' + (cb.pairIdx + 1) + '/5 — ' + esc(p.label) + '</span>' +
+      '<span class="cb-score">LO ' + cb.scoreA + ' – ' + cb.scoreB + ' LAWAN</span></div>' +
+      '<div class="cb-duel">' +
+      cbFighterHtml(p.a, "A", p.a.hp, p.a.hp) +
       '<div class="vs">VS</div>' +
-      sdFighterHtml("LAWAN", showdown.b, b, showdown.revealed) +
-      "</div>";
+      cbFighterHtml(p.b, "B", p.b.hp, p.b.hp) +
+      '</div>' +
+      '<div class="cb-dmgs" id="cbDmgs"></div>';
+  }
+  function cbBlowEl(side, dmg) {
+    var box = $("cbDmgs");
+    if (!box) return;
+    var el = document.createElement("div");
+    el.className = "cb-dmg cb-dmg-" + side;
+    el.textContent = "-" + dmg;
+    box.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 650);
+  }
+  function playPair(idx) {
+    var cb = cardBattle;
+    if (!cb || cb.over) return;
+    var seq = cb.seq;
+    cb.pairIdx = idx;
+    renderBattleFrame();
+    var p = cb.pairs[idx];
+    p.sim.blows.forEach(function (blow, i) {
+      setTimeout(function () {
+        var c2 = cardBattle;
+        if (!c2 || c2.over || c2.seq !== seq || c2.pairIdx !== idx) return;
+        var atkEl = $("cbCard" + blow.side);
+        var defSide = blow.side === "A" ? "B" : "A";
+        var defEl = $("cbCard" + defSide);
+        var defMax = defSide === "A" ? p.a.hp : p.b.hp;
+        var defHp = defSide === "A" ? blow.hpA : blow.hpB;
+        var bar = $("cbBar" + defSide), num = $("cbHp" + defSide);
+        if (bar) {
+          bar.style.width = Math.max(0, Math.round(defHp / defMax * 100)) + "%";
+          bar.classList.toggle("cb-low", defHp / defMax < 0.25);
+        }
+        if (num) num.textContent = Math.max(0, defHp);
+        if (!isReducedMotion()) {
+          var lungeCls = blow.side === "A" ? "cb-lunge-a" : "cb-lunge-b";
+          if (atkEl) { atkEl.classList.remove("cb-lunge-a"); atkEl.classList.remove("cb-lunge-b"); void atkEl.offsetWidth; atkEl.classList.add(lungeCls); }
+          if (defEl) { defEl.classList.remove("cb-shake"); void defEl.offsetWidth; defEl.classList.add("cb-shake"); }
+        }
+        cbBlowEl(defSide, blow.dmg);
+        sfx.punch();
+      }, (i + 1) * BLOW_MS);
+    });
+    var total = p.sim.blows.length * BLOW_MS;
+    setTimeout(function () {
+      var c2 = cardBattle;
+      if (!c2 || c2.over || c2.seq !== seq || c2.pairIdx !== idx) return;
+      var winSide = p.sim.winner;
+      var loseSide = winSide === "A" ? "B" : "A";
+      var loseEl = $("cbCard" + loseSide);
+      if (loseEl) loseEl.classList.add("cb-ko");
+      var winEl = $("cbCard" + winSide);
+      if (winEl) winEl.classList.add("cb-win");
+      if (!p.scored) {
+        p.scored = true;
+        if (winSide === "A") c2.scoreA++; else c2.scoreB++;
+      }
+      sfx.pop();
+      setTimeout(function () {
+        var c3 = cardBattle;
+        if (!c3 || c3.over || c3.seq !== seq) return;
+        if (c3.pairIdx < 4) playPair(c3.pairIdx + 1);
+        else finishCardBattle();
+      }, PAIR_GAP_MS);
+    }, total + 250);
+  }
+  function skipBattle() {
+    var cb = cardBattle;
+    if (!cb || cb.over) return;
+    cb.seq = ++battleSeq; // batalkan semua timer adu kartu yang masih antre
+    cb.pairs.forEach(function (p) {
+      if (p.scored) return;
+      p.scored = true;
+      if (p.sim.winner === "A") cb.scoreA++; else cb.scoreB++;
+    });
+    finishCardBattle();
   }
   function sdRevealGroupHtml(title, parts, oppParts, isWinner, isLoser, baseIdx, sideCls) {
     var cls = "sd-team " + sideCls + (isWinner ? " sd-team-win" : (isLoser ? " sd-team-lose" : ""));
@@ -834,76 +941,66 @@
       (isWinner ? '<span class="sd-win-chip">PEMENANG</span>' : '') +
       '</div><div class="sd-team-cards">' + cards + '</div></div>';
   }
-  function sdRevealHtml(winner) {
-    return '<div class="sd-reveal">' +
-      sdRevealGroupHtml("TIM LO", showdown.a, showdown.b, winner === "A", winner === "B", 0, "sd-team-left") +
-      sdRevealGroupHtml("LAWAN", showdown.b, showdown.a, winner === "B", winner === "A", 5, "sd-team-right") +
-      '</div>';
-  }
-  $("showdownBtn").addEventListener("click", function () {
-    if (!showdown || showdown.over) return;
-    sfx.click();
-    $("showdownBtn").disabled = true; // kunci langsung — jangan nunggu reveal
-    showdown.revealed = true;
-    showdown.over = true;
-    var rev = showdown.reverse;
-    var a = partsStats(showdown.a), b = partsStats(showdown.b);
+  // Layar akhir: tim LO ditunjukin gede (kayak di Roblox, balik lobby liat
+  // fighter sendiri); deck lawan cuma muncul kalau tombolnya ditekan.
+  function finishCardBattle() {
+    var cb = cardBattle;
+    if (!cb || cb.over) return;
+    cb.over = true;
+    $("skipBattleBtn").classList.add("hidden");
+    var a = partsStats(cb.a), b = partsStats(cb.b);
     var winner;
-    if (a.avg === b.avg) winner = "draw";
-    else if (rev) winner = a.avg < b.avg ? "A" : "B";
-    else winner = a.avg > b.avg ? "A" : "B";
-    renderShowdown();
+    if (cb.reverse) winner = cb.scoreA < cb.scoreB ? "A" : "B"; // reverse: skor duel TERENDAH menang
+    else winner = cb.scoreA > cb.scoreB ? "A" : "B"; // 5 duel = seri mustahil
     var msg;
-    if (winner === "draw") {
-      msg = "SERI! AVG sama-sama " + a.avg.toFixed(1) + ". +50 Cash.";
-      if (showdown.mode === "bot" || showdown.mode === "online") save.cash += DRAW_REWARD;
-    } else if (winner === "A") {
-      msg = "MENANG! " + a.avg.toFixed(1) + " vs " + b.avg.toFixed(1) + ". +100 Cash, +1 Win!";
-      if (showdown.mode === "bot" || showdown.mode === "online") { save.cash += WIN_REWARD; save.wins++; }
+    if (winner === "A") {
+      msg = "MENANG! " + cb.scoreA + "–" + cb.scoreB + ". +100 Cash, +1 Win!";
+      if (cb.mode === "bot" || cb.mode === "online") { save.cash += WIN_REWARD; save.wins++; }
+      sfx.win(); sfx.coin();
     } else {
-      msg = "KALAH. " + a.avg.toFixed(1) + " vs " + b.avg.toFixed(1) + ". +15 Cash.";
-      if (showdown.mode === "bot" || showdown.mode === "online") save.cash += LOSE_REWARD;
+      msg = "KALAH. " + cb.scoreA + "–" + cb.scoreB + ". +15 Cash.";
+      if (cb.mode === "bot" || cb.mode === "online") save.cash += LOSE_REWARD;
+      sfx.lose();
     }
-    // v4.9.3 koreografi clash: fly-in 0-~500ms, hitstop 500-560ms,
-    // impak 560-880ms (flash layar penuh + shake + punch), reveal 940ms.
-    if (isReducedMotion()) {
-      sfx.pop();
-      if (winner === "draw") sfx.draw();
-      else if (winner === "A") { sfx.win(); sfx.coin(); }
-      else sfx.lose();
-    } else {
-      setTimeout(function () {
-        if (!showdown || !showdown.over) return;
-        sfx.punch();
-        var cf = $("clashFlash");
-        if (cf && cf.classList) {
-          cf.classList.remove("active");
-          void cf.offsetWidth;
-          cf.classList.add("active");
-        }
-      }, 560);
-      setTimeout(function () {
-        if (!showdown || !showdown.over) return;
-        if (winner === "draw") sfx.draw();
-        else if (winner === "A") { sfx.win(); sfx.coin(); }
-        else sfx.lose();
-      }, 940);
-    }
-    if (showdown.mode === "bot" || showdown.mode === "online") save.battles++;
+    if (cb.mode === "bot" || cb.mode === "online") save.battles++;
     persist();
     var rematchHtml = "";
-    if (showdown.mode === "bot") rematchHtml = '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (BOT BARU)</button>';
-    else if (showdown.mode === "online") rematchHtml = '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (ONLINE)</button>';
-    $("showdownResult").innerHTML = '<div class="sd-result">' + esc(msg) + '</div>' + sdRevealHtml(winner) + rematchHtml;
-    $("showdownBtn").classList.add("hidden");
+    if (cb.mode === "bot") rematchHtml = '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (BOT BARU)</button>';
+    else if (cb.mode === "online") rematchHtml = '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (ONLINE)</button>';
+    $("battleResult").innerHTML =
+      '<div class="sd-result">' + esc(msg) + '</div>' +
+      '<div class="cb-sub">Skor duel: ' + cb.scoreA + '–' + cb.scoreB + ' · AVG lo ' + a.avg.toFixed(1) + ' (Grade ' + a.grade + ') · AVG lawan ' + b.avg.toFixed(1) + '</div>' +
+      sdRevealGroupHtml("TIM LO", cb.a, cb.b, winner === "A", winner === "B", 0, "sd-team-left") +
+      '<div class="cb-deckrow"><button id="deckBtn" class="btn btn-blue btn-big">LIHAT DECK LAWAN</button></div>' +
+      '<div id="oppDeckBox"></div>' +
+      rematchHtml;
+    var db = $("deckBtn");
+    if (db) db.addEventListener("click", function () {
+      sfx.click();
+      var c2 = cardBattle;
+      if (!c2) return;
+      c2.deckShown = !c2.deckShown;
+      var box = $("oppDeckBox");
+      if (c2.deckShown) {
+        if (box) box.innerHTML = sdRevealGroupHtml("DECK LAWAN", c2.b, c2.a, winner === "B", winner === "A", 5, "sd-team-right");
+        db.textContent = "SEMBUNYIKAN DECK LAWAN";
+      } else {
+        if (box) box.innerHTML = "";
+        db.textContent = "LIHAT DECK LAWAN";
+      }
+    });
     var rb = $("rematchBtn");
     if (rb) rb.addEventListener("click", function () {
       sfx.click();
       rb.disabled = true;
-      if (showdown.mode === "online") onlineRematch();
+      if (cb.mode === "online") onlineRematch();
       else startMatch("bot");
     });
     renderBadges();
+  }
+  $("skipBattleBtn").addEventListener("click", function () {
+    sfx.click();
+    skipBattle();
   });
   var matchBackArmTimer = null;
   function resetMatchBackBtn() {
@@ -920,10 +1017,10 @@
     stopTimer();
     clearRollScene();
     resetMatchBackBtn();
-    var isOnline = (match && match.online) || (showdown && showdown.mode === "online");
+    var isOnline = (match && match.online) || (cardBattle && cardBattle.mode === "online");
     if (isOnline && !quiet && window.AFOnline) { onlineLeaving = true; AFOnline.leave(); }
     match = null;
-    showdown = null;
+    cardBattle = null; battleSeq++;
     $("arena").classList.add("hidden");
     $("matchPanel").classList.add("hidden");
     $("battleMenu").classList.remove("hidden");
@@ -976,7 +1073,7 @@
   var enableAnimBtn = $("enableAnimBtn");
   if (enableAnimBtn) enableAnimBtn.addEventListener("click", function () {
     save.anim = "on"; persist(); applyMotionPref(); renderAnimUI(); sfx.click();
-    toast("Efek penuh aktif — roll & clash sekarang jalan.");
+    toast("Efek penuh aktif — roll & adu kartu sekarang jalan.");
   });
   var dismissAnimBtn = $("dismissAnimBannerBtn");
   if (dismissAnimBtn) dismissAnimBtn.addEventListener("click", function () {
@@ -1151,7 +1248,7 @@
         if (match) finishMatch(msg.a, msg.b);
         break;
       case "rematch":
-        if (showdown && showdown.over) {
+        if (cardBattle && cardBattle.over) {
           if (match && Date.now() - match.startedAt < 2000) break; // dua-duanya tap bareng
           startMatch("online");
           if (onlineIsHost()) onlineBeginRound();
