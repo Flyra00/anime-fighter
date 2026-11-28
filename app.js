@@ -189,6 +189,35 @@
         tone(maj[i], 0.38, "triangle", 0.14, 0.15 + i * 0.035);
         tone(maj[i], 0.34, "sawtooth", 0.07, 0.15 + i * 0.035);
       }
+    },
+    // v4.15: shimmer lembut aura ungu mistis (skala halus sesuai rank 1..5)
+    auraShimmer: function (rank) {
+      var r = Math.max(1, Math.min(5, rank || 1));
+      var base = 660 + r * 45;
+      var vol = 0.05 + r * 0.012;
+      tone(base, 0.22, "sine", vol, 0.06, base * 1.12);
+      tone(base * 1.5, 0.26, "triangle", vol * 0.8, 0.12, base * 1.62);
+      if (r >= 3) tone(base * 2, 0.3, "sine", vol * 0.65, 0.18, base * 2.08);
+    },
+    // v4.15: SFX SHOWDOWN (countdown, slam, reveal per slot, winner pop)
+    sdTick: function (n) {
+      var f = n === 1 ? 880 : (n === 2 ? 660 : 523);
+      tone(f, 0.11, "triangle", 0.16, 0);
+      tone(f * 0.5, 0.09, "square", 0.05, 0);
+    },
+    sdSlam: function () {
+      tone(105, 0.28, "sine", 0.34, 0, 34);
+      noiseBurst(0.16, 0.26, 620, 0, "lowpass");
+      tone(220, 0.14, "sawtooth", 0.1, 0.02, 110);
+    },
+    sdSlotReveal: function (idx, wonSlot) {
+      var base = 440 + (idx || 0) * 75;
+      tone(base, 0.12, "triangle", 0.15, 0);
+      tone(wonSlot ? base * 1.25 : base * 0.9, 0.14, "sine", 0.14, 0.06);
+    },
+    sdWinnerPop: function () {
+      var n = [523, 659, 784, 1047];
+      for (var i = 0; i < n.length; i++) tone(n[i], 0.2, "triangle", 0.15, i * 0.06);
     }
   };
 
@@ -210,6 +239,10 @@
     if (key === "spd") return c.spd || 50;
     if (key === "dur") return c.def || 50;
     return 50;
+  }
+  // v4.15: false selama match (roll & pilih slot), true saat reveal showdown/akhir.
+  function isStatsRevealed() {
+    return !!(cardBattle && cardBattle.reveal);
   }
   function statLine(c) {
     if (c.stats) {
@@ -258,7 +291,7 @@
     $("winsBadge").textContent = "Wins: " + save.wins + " (Battle: " + save.battles + ")";
     $("soundBtn").textContent = "Suara: " + (soundOn ? "ON" : "OFF");
   }
-  function cardHtml(c, isSelected, staggerIdx) {
+  function cardHtml(c, isSelected, staggerIdx, hideStats) {
     var staggerCls = typeof staggerIdx === "number" ? " card-stagger" : "";
     var staggerStyle = typeof staggerIdx === "number" ? ' style="animation-delay:' + (Math.min(staggerIdx, 20) * 30) + 'ms"' : "";
     return '<button class="card rarity-' + rarityOf(c) + (isSelected ? " selected" : "") + staggerCls + '" data-id="' + c.id + '"' + staggerStyle + '>' +
@@ -267,7 +300,7 @@
       '<div class="card-name">' + esc(c.name) + '</div>' +
       '<div class="card-anime">' + esc(c.anime) + '</div>' +
       '<div class="card-move">Jurus: ' + esc(c.move) + '</div>' +
-      '<div class="card-stats">' + statLine(c) + '</div>' +
+      (hideStats ? "" : '<div class="card-stats">' + statLine(c) + '</div>') +
       "</div></button>";
   }
   var galleryDirty = true;
@@ -358,12 +391,12 @@
     if (match.round > 1) sfx.roundStart();
     beginTurn("a");
   }
-  // Bot lock-in bareng pas pemain pasang: pasang karakternya (pair.b) greedy
-  // ke slot kosong tempat stat-nya paling tinggi. Keliatan live di panel lawan.
+  // v4.15: Bot ikut menebak secara acak (tidak curang mengintip stat via bestSlotFor).
+  // bestSlotFor() tetap disimpan di file, hanya berhenti dipanggil di sini.
   function lockOpponent() {
     var c = match.pair.b;
     if (!c) return;
-    var key = bestSlotFor(c, match.b);
+    var key = randomEmptySlot(match.b);
     if (key) match.b[key] = c.id;
   }
   var rollTimers = [];
@@ -476,6 +509,8 @@
   function playRareSfx(c) {
     var fx = rareFx(c);
     fx.sfx.forEach(function (name) { if (sfx[name]) sfx[name](); });
+    var rk = tierRank(c);
+    if (rk >= 1 && sfx.auraShimmer) sfx.auraShimmer(rk);
   }
   function rarityEffects(c) {
     if (!c) return { wrapCls: "", sideCls: "", banner: "" };
@@ -487,10 +522,39 @@
     if (r === "Rare") return { wrapCls: " vs-land-rare", sideCls: "vs-bg-rare", banner: '<span class="vs-rare-banner vs-banner-rare">RARE</span>' };
     return { wrapCls: "", sideCls: "", banner: "" };
   }
+  // v4.15: Aura ungu mistis (Common polos; Rare -> Secret eskalasi intensitas)
+  function auraTierOf(c) {
+    if (!c) return "";
+    var r = rarityOf(c);
+    return r === "Common" ? "" : r.toLowerCase();
+  }
+  function auraLayerHtml(c, forceTier) {
+    var t = forceTier || auraTierOf(c);
+    if (!t) return "";
+    var wisps = t === "rare" ? 2 : (t === "epic" ? 3 : 4);
+    var sparks = (t === "legendary" || t === "mythical" || t === "secret") ? 4 : 0;
+    var h = '<div class="aura-layer aura-' + t + '" aria-hidden="true"><div class="aura-glow"></div>';
+    for (var i = 1; i <= wisps; i++) h += '<span class="aura-wisp aura-w' + i + '"></span>';
+    for (var j = 1; j <= sparks; j++) h += '<span class="aura-spark aura-sp' + j + '"></span>';
+    return h + "</div>";
+  }
+  function auraSlotCls(c) {
+    var t = auraTierOf(c);
+    return t ? " has-slot-aura slot-aura-" + t : "";
+  }
+  function auraThumbHtml(c) {
+    var t = auraTierOf(c);
+    if (!t) return imgHtml(c);
+    return '<span class="slot-thumb-aura slot-aura-' + t + '">' +
+      '<span class="slot-aura-wisp" aria-hidden="true"></span>' +
+      imgHtml(c) + "</span>";
+  }
   function vsCardWrapHtml(c, isLanding) {
     var fx = rarityEffects(c);
-    return '<div class="vs-card-wrap' + (isLanding ? " vs-land" : "") + fx.wrapCls + '">' +
-      fx.banner + cardHtml(c, false) + "</div>";
+    var t = auraTierOf(c);
+    var auraCls = t ? " has-aura aura-wrap-" + t : "";
+    return '<div class="vs-card-wrap' + (isLanding ? " vs-land" : "") + fx.wrapCls + auraCls + '">' +
+      auraLayerHtml(c) + fx.banner + cardHtml(c, false, undefined, !isStatsRevealed()) + "</div>";
   }
   function triggerParticles(sideEl, tier) {
     if (isReducedMotion() || !particlePool.length) return;
@@ -570,7 +634,6 @@
       '<div class="card-name">' + esc(c.name) + "</div>" +
       '<div class="card-anime">' + esc(c.anime) + "</div>" +
       '<div class="card-move">Mengacak petarung...</div>' +
-      '<div class="card-stats"><span class="stat-chip">STR <b>?</b></span><span class="stat-chip">SPD <b>?</b></span><span class="stat-chip">ABI <b>?</b></span><span class="stat-chip">IQ <b>?</b></span><span class="stat-chip">DUR <b>?</b></span></div>' +
       "</div></button></div>";
   }
   function randomSpinChar() {
@@ -1033,18 +1096,18 @@
       oppName = match.turn === "a" ? "TEMAN" : "LO";
     }
     $("oppTitle").textContent = "LAWAN (" + oppName + ") — LIVE";
+    var revealed = isStatsRevealed();
     var html = "";
     SLOT_DEFS.forEach(function (d) {
       var id = oppParts[d.key];
       var c = id ? charById(id) : null;
-      // v4.9.3: struktur sama persis dengan slot lo (thumb + label/nama/jurus
-      // + chip nilai) supaya baris kiri-kanan sejajar & sama tinggi.
-      html += '<div class="opp-row">' +
-        (c ? imgHtml(c) +
+      // v4.15: sembunyikan nilai stat selama match (hanya tampil jika revealed = true).
+      html += '<div class="opp-row' + (c ? auraSlotCls(c) : "") + '">' +
+        (c ? auraThumbHtml(c) +
           '<span class="opp-info"><span class="opp-label">' + d.label + '</span>' +
           '<span class="opp-name">' + esc(c.name) + '</span>' +
           '<span class="opp-move">' + esc(c.move) + '</span></span>' +
-          '<span class="opp-val">' + statOf(c, d.key) + '</span>' :
+          (revealed ? '<span class="opp-val">' + statOf(c, d.key) + '</span>' : "") :
           '<span class="opp-info"><span class="opp-label">' + d.label + '</span>' +
           '<span class="opp-empty">— menunggu —</span></span>') +
         "</div>";
@@ -1121,21 +1184,22 @@
         "</div>";
     }
     var parts = match.online ? onlineMyParts() : activeParts();
+    var revealed = isStatsRevealed();
     var html = "";
     SLOT_DEFS.forEach(function (d) {
       var id = parts[d.key];
       var c = id ? charById(id) : null;
-      html += '<button class="build-slot match-slot" data-slot="' + d.key + '"' + ((match.rolling || c || (match.online && match.myPlaced)) ? " disabled" : "") + ">";
+      html += '<button class="build-slot match-slot' + (c ? auraSlotCls(c) : "") + '" data-slot="' + d.key + '"' + ((match.rolling || c || (match.online && match.myPlaced)) ? " disabled" : "") + ">";
       if (c) {
-        html += imgHtml(c) +
+        html += auraThumbHtml(c) +
           '<span class="slot-info"><span class="slot-label">' + d.label + ' <span class="slot-sub">(' + d.sub + ')</span></span>' +
           '<span class="slot-char">' + esc(c.name) + '</span>' +
           '<span class="slot-move">Jurus: ' + esc(c.move) + '</span></span>' +
-          '<span class="slot-val">' + statOf(c, d.key) + '</span>';
+          (revealed ? '<span class="slot-val">' + statOf(c, d.key) + '</span>' : "");
       } else {
         html += '<span class="slot-info"><span class="slot-label">' + d.label + ' <span class="slot-sub">(' + d.sub + ')</span></span>' +
           '<span class="slot-empty">+ Kosong — tap buat pasang ' + esc(match.roll.name) + '</span></span>' +
-          '<span class="slot-val slot-val-preview">' + statOf(match.roll, d.key) + '</span>';
+          (revealed ? '<span class="slot-val slot-val-preview">' + statOf(match.roll, d.key) + '</span>' : "");
       }
       html += "</button>";
     });
@@ -1170,13 +1234,10 @@
   // Damage = max(2, ATK penyerang - floor(DEF target / 3)) — rumus Roblox.
   // Urutan pukulan dihitung dulu dari stat combat (deterministik: hasil sama
   // di kedua device online, cuma timing tampilannya lokal).
-  var BLOW_MS = 300;       // jeda antar pukulan
-  var PAIR_GAP_MS = 700;   // jeda antar duel kartu
+  // Legacy battle v4.11 (disimpan untuk kompatibilitas / sim, TIDAK lagi menentukan hasil match v4.15)
+  var BLOW_MS = 300;
+  var PAIR_GAP_MS = 700;
   function battleDmg(att, def) { return Math.max(2, att.atk - Math.floor(def.def / 3)); }
-  // Siapa mukul duluan: SPD combat tertinggi; seri -> ATK tertinggi; seri
-  // lagi -> id terkecil. Urutan TOTAL atas kartu (bukan atas sisi A/B) supaya
-  // kedua device online menghitung urutan pukulan yang SAMA walau sisinya
-  // ditukar — "A" di host = "B" di tamu.
   function firstStrikerIsA(a, b) {
     if (a.spd !== b.spd) return a.spd > b.spd;
     if (a.atk !== b.atk) return a.atk > b.atk;
@@ -1191,124 +1252,259 @@
     }
     return { blows: blows, winner: hpA > 0 ? "A" : "B" };
   }
+
+  // ---------------- SHOWDOWN (v4.15 — ganti battle HP, AVG 5 slot lore = penentu) ----------------
+  var SD_COUNTDOWN_STEP_MS = 400; // 3 -> 2 -> 1 = 1200ms
+  var SD_SLAM_MS = 400;           // FIGHT! slam
+  var SD_SLOT_MS = 350;           // 5 slot x 350ms = 1750ms
+  var SD_WIN_HOLD_MS = 650;       // winner reveal sebelum layar akhir
+  var showdownTimers = [];
+  var showdownRaf = 0;
+
+  function clearShowdownTimers() {
+    while (showdownTimers.length) clearTimeout(showdownTimers.pop());
+    if (showdownRaf && cancelRafFn) cancelRafFn(showdownRaf);
+    showdownRaf = 0;
+  }
+  function sumAllCharStats(parts) {
+    var total = 0;
+    SLOT_DEFS.forEach(function (d) {
+      var c = charById(parts[d.key]);
+      if (c && c.stats) total += c.stats.str + c.stats.spd + c.stats.abi + c.stats.iq + c.stats.dur;
+    });
+    return total;
+  }
+  // Penentu pemenang SHOWDOWN 100% deterministik & simetris di kedua device online:
+  // 1) AVG 5 slot lore (integer sum 0..500; Reverse: terendah menang)
+  // 2) Tie-break 1: jumlah AVG keseluruhan 5 karakter lebih tinggi menang
+  // 3) Tie-break 2: firstStrikerIsA (spd->atk->id) pada slot pertama yang berbeda
+  function resolveShowdownWinner(localParts, oppParts, reverse, mySide) {
+    var sumA = 0, sumB = 0;
+    SLOT_DEFS.forEach(function (d) {
+      var ca = charById(localParts[d.key]), cb = charById(oppParts[d.key]);
+      sumA += ca ? statOf(ca, d.key) : 0;
+      sumB += cb ? statOf(cb, d.key) : 0;
+    });
+    if (sumA !== sumB) return reverse ? (sumA < sumB ? "A" : "B") : (sumA > sumB ? "A" : "B");
+    var allA = sumAllCharStats(localParts), allB = sumAllCharStats(oppParts);
+    if (allA !== allB) return allA > allB ? "A" : "B";
+    for (var i = 0; i < SLOT_DEFS.length; i++) {
+      var k = SLOT_DEFS[i].key;
+      var cA = charById(localParts[k]), cB = charById(oppParts[k]);
+      if (cA && cB && cA.id !== cB.id) return firstStrikerIsA(cA, cB) ? "A" : "B";
+    }
+    return mySide === "b" ? "B" : "A";
+  }
+  function sdSlotRowHtml(d, c, side, idx) {
+    var t = auraTierOf(c);
+    var rowAura = t ? " has-slot-aura slot-aura-" + t : "";
+    return '<div class="sd-row' + rowAura + '" id="sdRow' + side + idx + '">' +
+      (c ? auraThumbHtml(c) : '<div class="img-fallback" style="background:#FFF6E5">?</div>') +
+      '<div class="sd-row-info">' +
+      '<span class="sd-row-label">' + esc(d.label) + '</span>' +
+      '<span class="sd-row-name">' + esc(c ? c.name : "-") + '</span>' +
+      '</div>' +
+      '<span class="sd-row-mark" id="sdMark' + side + idx + '"></span>' +
+      '<span class="sd-row-val" id="sdVal' + side + idx + '">?</span>' +
+      '</div>';
+  }
+  function renderShowdownStage() {
+    var cb = cardBattle;
+    if (!cb) return;
+    var rowsA = "", rowsB = "";
+    SLOT_DEFS.forEach(function (d, i) {
+      rowsA += sdSlotRowHtml(d, charById(cb.a[d.key]), "A", i);
+      rowsB += sdSlotRowHtml(d, charById(cb.b[d.key]), "B", i);
+    });
+    $("battleBox").innerHTML =
+      '<div class="cb-head">' +
+      '<span id="sdPhaseTitle">SHOWDOWN' + (cb.reverse ? ' (REVERSE)' : '') + '</span>' +
+      '<span class="cb-score" id="cbScore">LO 0.0 – 0.0 LAWAN</span>' +
+      '</div>' +
+      '<div class="sd-stage" id="sdStage">' +
+      '<div class="sd-panel sd-panel-a" id="sdPanelA">' +
+      '<div class="sd-panel-head"><span>' + esc(cb.myName) + '</span><span class="sd-crown hidden" id="sdCrownA">👑</span></div>' +
+      '<div class="sd-rows">' + rowsA + '</div>' +
+      '<div class="sd-avg-box"><span class="sd-avg-cap">AVG SCORE</span><b class="sd-avg-num" id="sdAvgA">0.0</b></div>' +
+      '</div>' +
+      '<div class="sd-center" id="sdCenter">' +
+      '<div class="sd-cd-badge" id="sdCd">3</div>' +
+      '<div class="sd-vs-orb">VS</div>' +
+      '</div>' +
+      '<div class="sd-panel sd-panel-b" id="sdPanelB">' +
+      '<div class="sd-panel-head"><span>' + esc(cb.oppName) + '</span><span class="sd-crown hidden" id="sdCrownB">👑</span></div>' +
+      '<div class="sd-rows">' + rowsB + '</div>' +
+      '<div class="sd-avg-box"><span class="sd-avg-cap">AVG SCORE</span><b class="sd-avg-num" id="sdAvgB">0.0</b></div>' +
+      '</div>' +
+      '<div class="sd-slam-flash" id="sdFlash" aria-hidden="true"></div>' +
+      '</div>';
+  }
+  function tweenAvgDisplay(fromA, toA, fromB, toB, durMs, seq) {
+    if (showdownRaf && cancelRafFn) cancelRafFn(showdownRaf);
+    showdownRaf = 0;
+    function setNums(vA, vB) {
+      var eA = $("sdAvgA"), eB = $("sdAvgB"), pill = $("cbScore");
+      var sA = vA.toFixed(1), sB = vB.toFixed(1);
+      if (eA) eA.textContent = sA;
+      if (eB) eB.textContent = sB;
+      if (pill) pill.textContent = "LO " + sA + " – " + sB + " LAWAN";
+    }
+    if (!rafFn || isReducedMotion() || !durMs) { setNums(toA, toB); return; }
+    var t0 = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+    function step(now) {
+      if (!cardBattle || cardBattle.over || cardBattle.seq !== seq) { showdownRaf = 0; return; }
+      var p = Math.min(1, ((now || Date.now()) - t0) / durMs);
+      var eased = 1 - Math.pow(1 - p, 2);
+      setNums(fromA + (toA - fromA) * eased, fromB + (toB - fromB) * eased);
+      if (p < 1) showdownRaf = rafFn(step);
+      else showdownRaf = 0;
+    }
+    showdownRaf = rafFn(step);
+  }
+  function revealShowdownSlot(idx, seq) {
+    var cb = cardBattle;
+    if (!cb || cb.over || cb.seq !== seq) return;
+    var p = cb.pairs[idx];
+    var prevA = cb.runAvgA, prevB = cb.runAvgB;
+    cb.runSumA += p.valA;
+    cb.runSumB += p.valB;
+    cb.runAvgA = cb.runSumA / 5;
+    cb.runAvgB = cb.runSumB / 5;
+    var rA = $("sdRowA" + idx), rB = $("sdRowB" + idx);
+    var vA = $("sdValA" + idx), vB = $("sdValB" + idx);
+    var mA = $("sdMarkA" + idx), mB = $("sdMarkB" + idx);
+    if (vA) vA.textContent = p.valA;
+    if (vB) vB.textContent = p.valB;
+    var aWinSlot = cb.reverse ? (p.valA < p.valB) : (p.valA > p.valB);
+    var bWinSlot = cb.reverse ? (p.valB < p.valA) : (p.valB > p.valA);
+    if (rA) rA.classList.add("sd-row-lit", aWinSlot ? "sd-row-win" : (bWinSlot ? "sd-row-lose" : "sd-row-draw"));
+    if (rB) rB.classList.add("sd-row-lit", bWinSlot ? "sd-row-win" : (aWinSlot ? "sd-row-lose" : "sd-row-draw"));
+    if (mA) mA.textContent = aWinSlot ? "✓" : (bWinSlot ? "×" : "=");
+    if (mB) mB.textContent = bWinSlot ? "✓" : (aWinSlot ? "×" : "=");
+    tweenAvgDisplay(prevA, cb.runAvgA, prevB, cb.runAvgB, 260, seq);
+    var pA = $("sdPanelA"), pB = $("sdPanelB");
+    if (pA && pB) {
+      var aLead = cb.reverse ? (cb.runSumA < cb.runSumB) : (cb.runSumA > cb.runSumB);
+      var bLead = cb.reverse ? (cb.runSumB < cb.runSumA) : (cb.runSumB > cb.runSumA);
+      pA.classList.toggle("sd-leading", aLead);
+      pA.classList.toggle("sd-trailing", bLead);
+      pB.classList.toggle("sd-leading", bLead);
+      pB.classList.toggle("sd-trailing", aLead);
+    }
+    sfx.sdSlotReveal(idx, aWinSlot);
+  }
   function startCardBattle(aParts, bParts, mode, reverse, mySide) {
-    // "A" = fighter LOKAL (tamu online = sisi b, jadi ditukar supaya kiri
-    // selalu fighter lo dan kanan selalu lawan — menang/kalah tidak kebalik).
+    clearShowdownTimers();
+    bgmDuckCancel(true);
+    // "A" = fighter LOKAL (tamu online = sisi b, ditukar supaya kiri/atas selalu LO).
     var local = mySide === "b" ? bParts : aParts;
     var opp = mySide === "b" ? aParts : bParts;
+    var aStats = partsStats(local), bStats = partsStats(opp);
     var pairs = SLOT_DEFS.map(function (d) {
       var ca = charById(local[d.key]), cb = charById(opp[d.key]);
-      return { key: d.key, label: d.label, a: ca, b: cb, sim: simPairBlows(ca, cb), scored: false };
+      var valA = ca ? statOf(ca, d.key) : 0;
+      var valB = cb ? statOf(cb, d.key) : 0;
+      return { key: d.key, label: d.label, a: ca, b: cb, valA: valA, valB: valB };
     });
-    cardBattle = { a: local, b: opp, mode: mode, reverse: reverse,
-      pairs: pairs, pairIdx: 0, scoreA: 0, scoreB: 0, seq: ++battleSeq,
-      over: false, deckShown: false };
+    var myName = (mode === "online" && window.AFOnline && AFOnline.myName) ? AFOnline.myName : "TIM LO";
+    var oppName = (mode === "online" && window.AFOnline && AFOnline.oppName) ? AFOnline.oppName : (mode === "bot" ? "BOT" : "TEMAN");
+    var winner = resolveShowdownWinner(local, opp, reverse, mySide);
+    cardBattle = {
+      a: local, b: opp, mode: mode, reverse: reverse, mySide: mySide || "a",
+      myName: myName, oppName: oppName,
+      pairs: pairs, avgA: aStats.avg, avgB: bStats.avg, gradeA: aStats.grade, gradeB: bStats.grade,
+      runSumA: 0, runSumB: 0, runAvgA: 0, runAvgB: 0,
+      winner: winner, reveal: false, seq: ++battleSeq, over: false, deckShown: false
+    };
     $("arena").classList.remove("hidden");
     $("battleResult").innerHTML = "";
     $("skipBattleBtn").classList.remove("hidden");
-    sfx.battle();
-    playPair(0);
-  }
-  function cbFighterHtml(c, side, hp, maxHp) {
-    var pct = Math.max(0, Math.round(hp / maxHp * 100));
-    return '<div class="cb-fighter" id="cbCard' + side + '">' +
-      (c ? imgHtml(c) : '<div class="img-fallback" style="background:#FFF6E5">?</div>') +
-      '<div class="cb-name">' + esc(c ? c.name : "-") + '</div>' +
-      '<div class="cb-hp"><span class="cb-hpbar"><span class="cb-hpfill" id="cbBar' + side + '" style="width:' + pct + '%"></span></span>' +
-      '<span class="cb-hpnum" id="cbHp' + side + '">' + Math.max(0, hp) + '</span></div>' +
-      '</div>';
-  }
-  function renderBattleFrame() {
-    var cb = cardBattle;
-    if (!cb) return;
-    var p = cb.pairs[cb.pairIdx];
-    $("battleBox").innerHTML =
-      '<div class="cb-head"><span>ADU KARTU ' + (cb.pairIdx + 1) + '/5 — ' + esc(p.label) + '</span>' +
-      '<span class="cb-score" id="cbScore">LO ' + cb.scoreA + ' – ' + cb.scoreB + ' LAWAN</span></div>' +
-      '<div class="cb-duel">' +
-      cbFighterHtml(p.a, "A", p.a.hp, p.a.hp) +
-      '<div class="vs">VS</div>' +
-      cbFighterHtml(p.b, "B", p.b.hp, p.b.hp) +
-      '<div class="cb-dmgs" id="cbDmgs"></div>' +
-      '</div>';
-  }
-  function cbBlowEl(side, dmg) {
-    var box = $("cbDmgs");
-    if (!box) return;
-    var el = document.createElement("div");
-    el.className = "cb-dmg cb-dmg-" + side;
-    el.textContent = "-" + dmg;
-    box.appendChild(el);
-    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 650);
-  }
-  function playPair(idx) {
-    var cb = cardBattle;
-    if (!cb || cb.over) return;
-    var seq = cb.seq;
-    cb.pairIdx = idx;
-    renderBattleFrame();
-    var p = cb.pairs[idx];
-    p.sim.blows.forEach(function (blow, i) {
-      setTimeout(function () {
-        var c2 = cardBattle;
-        if (!c2 || c2.over || c2.seq !== seq || c2.pairIdx !== idx) return;
-        var atkEl = $("cbCard" + blow.side);
-        var defSide = blow.side === "A" ? "B" : "A";
-        var defEl = $("cbCard" + defSide);
-        var defMax = defSide === "A" ? p.a.hp : p.b.hp;
-        var defHp = defSide === "A" ? blow.hpA : blow.hpB;
-        var bar = $("cbBar" + defSide), num = $("cbHp" + defSide);
-        if (bar) {
-          bar.style.width = Math.max(0, Math.round(defHp / defMax * 100)) + "%";
-          bar.classList.toggle("cb-low", defHp / defMax < 0.25);
-        }
-        if (num) num.textContent = Math.max(0, defHp);
-        if (!isReducedMotion()) {
-          var lungeCls = blow.side === "A" ? "cb-lunge-a" : "cb-lunge-b";
-          if (atkEl) { atkEl.classList.remove("cb-lunge-a"); atkEl.classList.remove("cb-lunge-b"); void atkEl.offsetWidth; atkEl.classList.add(lungeCls); }
-          if (defEl) { defEl.classList.remove("cb-shake"); void defEl.offsetWidth; defEl.classList.add("cb-shake"); }
-        }
-        cbBlowEl(defSide, blow.dmg);
-        sfx.punch();
-      }, (i + 1) * BLOW_MS);
+    renderShowdownStage();
+    var seq = cardBattle.seq;
+    function at(ms, fn) {
+      showdownTimers.push(setTimeout(function () {
+        if (!cardBattle || cardBattle.over || cardBattle.seq !== seq) return;
+        fn();
+      }, ms));
+    }
+
+    // Reduced-motion: reveal tenang tanpa slam/shake, seluruh angka + SFX tetap jalan (~900ms).
+    if (isReducedMotion()) {
+      cardBattle.reveal = true;
+      var cd0 = $("sdCd"); if (cd0) cd0.textContent = "SHOWDOWN";
+      sfx.sdSlam();
+      for (var k = 0; k < 5; k++) revealShowdownSlot(k, seq);
+      at(450, function () {
+        var winSide = cardBattle.winner, loseSide = winSide === "A" ? "B" : "A";
+        var wEl = $("sdPanel" + winSide), lEl = $("sdPanel" + loseSide);
+        var cr = $("sdCrown" + winSide);
+        if (wEl) { wEl.classList.remove("sd-trailing"); wEl.classList.add("sd-panel-win"); }
+        if (lEl) { lEl.classList.remove("sd-leading"); lEl.classList.add("sd-panel-lose"); }
+        if (cr) cr.classList.remove("hidden");
+        sfx.sdWinnerPop();
+      });
+      at(900, function () { finishCardBattle(); });
+      return;
+    }
+
+    // 1) Countdown 3 -> 2 -> 1 (0ms, 400ms, 800ms)
+    sfx.sdTick(3);
+    at(SD_COUNTDOWN_STEP_MS, function () {
+      var cd = $("sdCd"); if (cd) { cd.textContent = "2"; cd.classList.remove("sd-cd-pop"); void cd.offsetWidth; cd.classList.add("sd-cd-pop"); }
+      sfx.sdTick(2);
     });
-    var total = p.sim.blows.length * BLOW_MS;
-    setTimeout(function () {
-      var c2 = cardBattle;
-      if (!c2 || c2.over || c2.seq !== seq || c2.pairIdx !== idx) return;
-      var winSide = p.sim.winner;
-      var loseSide = winSide === "A" ? "B" : "A";
-      var loseEl = $("cbCard" + loseSide);
-      if (loseEl) loseEl.classList.add("cb-ko");
-      var winEl = $("cbCard" + winSide);
-      if (winEl) winEl.classList.add("cb-win");
-      if (!p.scored) {
-        p.scored = true;
-        if (winSide === "A") c2.scoreA++; else c2.scoreB++;
-        var scorePill = $("cbScore");
-        if (scorePill) scorePill.textContent = "LO " + c2.scoreA + " – " + c2.scoreB + " LAWAN";
-      }
-      sfx.pop();
-      setTimeout(function () {
-        var c3 = cardBattle;
-        if (!c3 || c3.over || c3.seq !== seq) return;
-        if (c3.pairIdx < 4) playPair(c3.pairIdx + 1);
-        else finishCardBattle();
-      }, PAIR_GAP_MS);
-    }, total + 250);
+    at(SD_COUNTDOWN_STEP_MS * 2, function () {
+      var cd = $("sdCd"); if (cd) { cd.textContent = "1"; cd.classList.remove("sd-cd-pop"); void cd.offsetWidth; cd.classList.add("sd-cd-pop"); }
+      sfx.sdTick(1);
+    });
+
+    // 2) FIGHT! slam (t = 1200ms, durasi 400ms)
+    var slamT = SD_COUNTDOWN_STEP_MS * 3;
+    at(slamT, function () {
+      cardBattle.reveal = true;
+      var cd = $("sdCd"); if (cd) { cd.textContent = "FIGHT!"; cd.classList.add("sd-fight-pop"); }
+      var st = $("sdStage"); if (st) st.classList.add("sd-slammed");
+      bgmDuck(0.25, 40, 260, 320);
+      sfx.sdSlam();
+    });
+
+    // 3) AVG count-up + reveal 5 slot (t = 1600..3000ms, selesai 3350ms)
+    var revealStartT = slamT + SD_SLAM_MS;
+    for (var i = 0; i < 5; i++) {
+      (function (slotIdx) {
+        at(revealStartT + slotIdx * SD_SLOT_MS, function () {
+          revealShowdownSlot(slotIdx, seq);
+        });
+      })(i);
+    }
+
+    // 4) Winner reveal (t = 3350ms, hold 650ms -> layar akhir di t = 4000ms)
+    var winT = revealStartT + 5 * SD_SLOT_MS;
+    at(winT, function () {
+      var winSide = cardBattle.winner, loseSide = winSide === "A" ? "B" : "A";
+      var wEl = $("sdPanel" + winSide), lEl = $("sdPanel" + loseSide);
+      var cr = $("sdCrown" + winSide);
+      var title = $("sdPhaseTitle");
+      if (title) title.textContent = "PEMENANG: " + (winSide === "A" ? cardBattle.myName : cardBattle.oppName);
+      if (wEl) { wEl.classList.remove("sd-trailing"); wEl.classList.add("sd-panel-win"); }
+      if (lEl) { lEl.classList.remove("sd-leading"); lEl.classList.add("sd-panel-lose"); }
+      if (cr) cr.classList.remove("hidden");
+      sfx.sdWinnerPop();
+    });
+    at(winT + SD_WIN_HOLD_MS, function () {
+      finishCardBattle();
+    });
   }
   function skipBattle() {
     var cb = cardBattle;
     if (!cb || cb.over) return;
-    cb.seq = ++battleSeq; // batalkan semua timer adu kartu yang masih antre
-    cb.pairs.forEach(function (p) {
-      if (p.scored) return;
-      p.scored = true;
-      if (p.sim.winner === "A") cb.scoreA++; else cb.scoreB++;
-    });
+    cb.seq = ++battleSeq;
+    cb.reveal = true;
+    clearShowdownTimers();
+    bgmDuckCancel(true);
     finishCardBattle();
   }
-  function sdRevealGroupHtml(title, parts, oppParts, isWinner, isLoser, baseIdx, sideCls) {
+  function sdRevealGroupHtml(title, parts, oppParts, isWinner, isLoser, baseIdx, sideCls, reverse) {
     var cls = "sd-team " + sideCls + (isWinner ? " sd-team-win" : (isLoser ? " sd-team-lose" : ""));
     var cards = "";
     SLOT_DEFS.forEach(function (d, i) {
@@ -1316,9 +1512,15 @@
       var oc = charById(oppParts[d.key]);
       var v = c ? statOf(c, d.key) : 0;
       var ov = oc ? statOf(oc, d.key) : 0;
-      var cmpCls = v > ov ? " sd-mini-win" : (v < ov ? " sd-mini-lose" : " sd-mini-draw");
-      var delay = (baseIdx + i) * 35; // v4.9.3: fly-in 0-~500ms, stagger 35ms/baris
-      cards += '<div class="sd-mini' + cmpCls + '" style="animation-delay:' + delay + 'ms">' +
+      var slotWin = reverse ? (v < ov) : (v > ov);
+      var slotLose = reverse ? (v > ov) : (v < ov);
+      var cmpCls = slotWin ? " sd-mini-win" : (slotLose ? " sd-mini-lose" : " sd-mini-draw");
+      var delay = (baseIdx + i) * 35;
+      // Stage B: kartu tim pemenang memakai aura ungu mistis (Common diberi aura ungu tipis jika tim menang).
+      var winAura = isWinner ? auraLayerHtml(c, auraTierOf(c) || "rare") : "";
+      var auraCls = winAura ? " has-win-aura" : "";
+      cards += '<div class="sd-mini' + cmpCls + auraCls + '" style="animation-delay:' + delay + 'ms">' +
+        winAura +
         (c ? imgHtml(c) : '<div class="img-fallback" style="background:#FFF6E5">?</div>') +
         '<div class="sd-mini-slot">' + esc(d.label) + '</div>' +
         '<div class="sd-mini-name">' + esc(c ? c.name : "-") + '</div>' +
@@ -1326,32 +1528,30 @@
         '</div>';
     });
     return '<div class="' + cls + '">' +
-      '<div class="sd-team-head"><span>' + esc(title) + '</span>' +
+      '<div class="sd-team-head"><span>' + (isWinner ? '👑 ' : '') + esc(title) + '</span>' +
       (isWinner ? '<span class="sd-win-chip">PEMENANG</span>' : '') +
       '</div><div class="sd-team-cards">' + cards + '</div></div>';
   }
-  // Layar akhir: tim LO ditunjukin gede (kayak di Roblox, balik lobby liat
-  // fighter sendiri); deck lawan cuma muncul kalau tombolnya ditekan.
   function finishCardBattle() {
     var cb = cardBattle;
     if (!cb || cb.over) return;
     cb.over = true;
+    cb.reveal = true;
+    clearShowdownTimers();
+    bgmDuckCancel(true);
     $("skipBattleBtn").classList.add("hidden");
-    // Pill skor di frame duel terakhir masih nunjukin skor awal duel ke-5 —
-    // update ke skor akhir supaya nggak beda sama banner hasil.
-    var pill = $("cbScore");
-    if (pill) pill.textContent = "LO " + cb.scoreA + " – " + cb.scoreB + " LAWAN";
-    var a = partsStats(cb.a), b = partsStats(cb.b);
-    var winner;
-    if (cb.reverse) winner = cb.scoreA < cb.scoreB ? "A" : "B"; // reverse: skor duel TERENDAH menang
-    else winner = cb.scoreA > cb.scoreB ? "A" : "B"; // 5 duel = seri mustahil
+    // Ringkas #battleBox menjadi strip skor akhir agar layar winner langsung terlihat di 390px.
+    $("battleBox").innerHTML =
+      '<div class="cb-head sd-done-strip"><span>SHOWDOWN SELESAI' + (cb.reverse ? ' (REVERSE)' : '') + '</span>' +
+      '<span class="cb-score" id="cbScore">LO ' + cb.avgA.toFixed(1) + ' – ' + cb.avgB.toFixed(1) + ' LAWAN</span></div>';
+    var winner = cb.winner;
     var msg;
     if (winner === "A") {
-      msg = "MENANG! " + cb.scoreA + "–" + cb.scoreB + ". +100 Cash, +1 Win!";
+      msg = "👑 MENANG! AVG " + cb.avgA.toFixed(1) + " vs " + cb.avgB.toFixed(1) + ". +100 Cash, +1 Win!";
       if (cb.mode === "bot" || cb.mode === "online") { save.cash += WIN_REWARD; save.wins++; }
       sfx.win(); sfx.coin();
     } else {
-      msg = "KALAH. " + cb.scoreA + "–" + cb.scoreB + ". +15 Cash.";
+      msg = "KALAH. AVG " + cb.avgA.toFixed(1) + " vs " + cb.avgB.toFixed(1) + ". +15 Cash.";
       if (cb.mode === "bot" || cb.mode === "online") save.cash += LOSE_REWARD;
       sfx.lose();
     }
@@ -1360,10 +1560,12 @@
     var rematchHtml = "";
     if (cb.mode === "bot") rematchHtml = '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (BOT BARU)</button>';
     else if (cb.mode === "online") rematchHtml = '<button id="rematchBtn" class="btn btn-red btn-big" style="margin-top:10px">REMATCH (ONLINE)</button>';
+    else if (cb.mode === "duel") rematchHtml = '<button id="rematchBtn" class="btn btn-blue btn-big" style="margin-top:10px">REMATCH (DUEL)</button>';
+    var resCls = winner === "A" ? "sd-result sd-result-win" : "sd-result sd-result-lose";
     $("battleResult").innerHTML =
-      '<div class="sd-result">' + esc(msg) + '</div>' +
-      '<div class="cb-sub">Skor duel: ' + cb.scoreA + '–' + cb.scoreB + ' · AVG lo ' + a.avg.toFixed(1) + ' (Grade ' + a.grade + ') · AVG lawan ' + b.avg.toFixed(1) + '</div>' +
-      sdRevealGroupHtml("TIM LO", cb.a, cb.b, winner === "A", winner === "B", 0, "sd-team-left") +
+      '<div class="' + resCls + '">' + esc(msg) + '</div>' +
+      '<div class="cb-sub">AVG SCORE lo <b>' + cb.avgA.toFixed(1) + '</b> <span class="sd-grade-chip">GRADE ' + cb.gradeA + '</span> · AVG lawan <b>' + cb.avgB.toFixed(1) + '</b> (Grade ' + cb.gradeB + ')</div>' +
+      sdRevealGroupHtml(cb.myName, cb.a, cb.b, winner === "A", winner === "B", 0, "sd-team-left", cb.reverse) +
       '<div class="cb-deckrow"><button id="deckBtn" class="btn btn-blue btn-big">LIHAT DECK LAWAN</button></div>' +
       '<div id="oppDeckBox"></div>' +
       rematchHtml;
@@ -1375,7 +1577,7 @@
       c2.deckShown = !c2.deckShown;
       var box = $("oppDeckBox");
       if (c2.deckShown) {
-        if (box) box.innerHTML = sdRevealGroupHtml("DECK LAWAN", c2.b, c2.a, winner === "B", winner === "A", 5, "sd-team-right");
+        if (box) box.innerHTML = sdRevealGroupHtml("DECK " + c2.oppName, c2.b, c2.a, winner === "B", winner === "A", 5, "sd-team-right", c2.reverse);
         db.textContent = "SEMBUNYIKAN DECK LAWAN";
       } else {
         if (box) box.innerHTML = "";
@@ -1387,7 +1589,7 @@
       sfx.click();
       rb.disabled = true;
       if (cb.mode === "online") onlineRematch();
-      else startMatch("bot");
+      else startMatch(cb.mode);
     });
     renderBadges();
   }
@@ -1408,6 +1610,7 @@
   function closeMatchUI(quiet) {
     sfx.click();
     clearTimeout(lockInTimer); lockInTimer = null;
+    clearShowdownTimers();
     stopTimer();
     clearRollScene();
     resetMatchBackBtn();
