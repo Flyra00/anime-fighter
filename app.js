@@ -18,6 +18,8 @@
 // Layar akhir nunjukin TIM LO; deck lawan di balik tombol. Save di localStorage.
 // v4.11: showdown dihapus -> adu kartu (HP + damage Roblox) + layar akhir
 // tim LO + tombol LIHAT DECK LAWAN + LEWATI. Rarity dari AVG (v4.10) tetap.
+// v4.12: Obito pakai form terakhir (Juubi, gambar lokal) + efek dapet kartu
+// langka naik per tier (jeda/suara/glow/banner/lompatan/kilat).
 (function () {
   "use strict";
 
@@ -365,15 +367,37 @@
   function rarityEffects(c) {
     if (!c) return { wrapCls: "", banner: "" };
     var r = rarityOf(c);
-    if (r === "Legendary") return { wrapCls: " vs-rare-glow vs-glow-legendary", banner: '<span class="vs-rare-banner vs-banner-legendary">LEGENDARY</span>' };
-    if (r === "Mythical") return { wrapCls: " vs-rare-glow vs-glow-mythical", banner: '<span class="vs-rare-banner vs-banner-mythical">MYTHICAL</span>' };
-    if (r === "Secret") return { wrapCls: " vs-rare-glow vs-glow-secret", banner: '<span class="vs-rare-banner vs-banner-secret">SECRET</span>' };
-    if (r === "Epic") return { wrapCls: " vs-pulse-light vs-pulse-epic", banner: "" };
-    if (r === "Rare") return { wrapCls: " vs-pulse-light", banner: "" };
+    if (r === "Secret") return { wrapCls: " vs-rare-glow vs-glow-secret vs-land-huge", banner: '<span class="vs-rare-banner vs-banner-secret vs-banner-big">SECRET</span>' };
+    if (r === "Mythical") return { wrapCls: " vs-rare-glow vs-glow-mythical vs-land-big", banner: '<span class="vs-rare-banner vs-banner-mythical vs-banner-big">MYTHICAL</span>' };
+    if (r === "Legendary") return { wrapCls: " vs-rare-glow vs-glow-legendary vs-land-big", banner: '<span class="vs-rare-banner vs-banner-legendary">LEGENDARY</span>' };
+    if (r === "Epic") return { wrapCls: " vs-rare-glow vs-glow-epic", banner: '<span class="vs-rare-banner vs-banner-epic">EPIC</span>' };
+    if (r === "Rare") return { wrapCls: " vs-pulse-light", banner: '<span class="vs-rare-banner vs-banner-rare vs-banner-small">RARE</span>' };
     return { wrapCls: "", banner: "" };
   }
-  function isHighRarity(c) {
-    return !!(c && (rarityOf(c) === "Legendary" || rarityOf(c) === "Mythical" || rarityOf(c) === "Secret"));
+  // v4.12: efek dapet kartu langka naik per tier — makin tinggi rarity-nya,
+  // makin lama jeda suspense-nya, makin meriah suaranya, dan (buat Mythical/
+  // Secret) ada kilat di kartu saat mendarat.
+  var RARE_FX = {
+    Common:    { pause: 0,   sfx: ["pop"],              flash: false },
+    Rare:      { pause: 80,  sfx: ["pop"],              flash: false },
+    Epic:      { pause: 160, sfx: ["coin"],             flash: false },
+    Legendary: { pause: 240, sfx: ["levelup"],          flash: false },
+    Mythical:  { pause: 340, sfx: ["levelup", "coin"],  flash: true },
+    Secret:    { pause: 480, sfx: ["win"],              flash: true }
+  };
+  function rareFx(c) { return RARE_FX[rarityOf(c)] || RARE_FX.Common; }
+  function playRareSfx(c) {
+    var fx = rareFx(c);
+    fx.sfx.forEach(function (name) { if (sfx[name]) sfx[name](); });
+  }
+  function triggerRareFlash(sideEl) {
+    if (!sideEl || isReducedMotion()) return;
+    var wrap = sideEl.querySelector(".vs-card-wrap");
+    if (!wrap) return;
+    var f = document.createElement("div");
+    f.className = "vs-flash";
+    wrap.appendChild(f);
+    setTimeout(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 650);
   }
   function vsCardWrapHtml(c, isLanding) {
     var fx = rarityEffects(c);
@@ -415,7 +439,6 @@
   // v4.9.3: kurva ease-out — burst cepat lalu rem yang kebaca, total ~1.4 dtk.
   var ROLL_STEPS = [55, 58, 62, 68, 76, 88, 110, 145, 195, 270];
   var ROLL_OPP_LAG_MS = 220; // BOT mendarat setelah LO
-  var RARE_PAUSE_MS = 160; // jeda suspense sebelum kartu langka mendarat
   function startRollScene(onDone) {
     clearRollScene();
     if (!match || match.over || !match.roll) return;
@@ -454,8 +477,8 @@
     var leftDecoys = pickDecoys(ROLL_STEPS.length, myChar.img);
     var rightDecoys = pickDecoys(ROLL_STEPS.length, oppChar.img);
     preloadChars(leftDecoys.concat(rightDecoys).concat([myChar, oppChar]));
-    var rareMy = isHighRarity(myChar) ? RARE_PAUSE_MS : 0;
-    var rareOpp = isHighRarity(oppChar) ? RARE_PAUSE_MS : 0;
+    var rareMy = rareFx(myChar).pause;
+    var rareOpp = rareFx(oppChar).pause;
     var elapsed = 0;
     for (var i = 0; i < ROLL_STEPS.length; i++) {
       elapsed += ROLL_STEPS[i];
@@ -465,8 +488,8 @@
           if (idx === ROLL_STEPS.length - 1) {
             // Langkah terakhir = LO mendarat (jeda rare bila langka).
             if (leftSide) leftSide.innerHTML = '<div class="vs-side-label">' + esc(myLabel) + "</div>" + vsCardWrapHtml(myChar, true);
-            sfx.pop();
-            if (isHighRarity(myChar)) sfx.levelup();
+            playRareSfx(myChar);
+            if (rareFx(myChar).flash) triggerRareFlash(leftSide);
             if (rightSide && rightDecoys[idx]) updateSpinSide(rightSide, rightDecoys[idx]);
           } else {
             sfx.rollTick(idx);
@@ -488,7 +511,8 @@
       var rb = rc ? rc.querySelector(".vs-rolling-banner") : null;
       if (rb) rb.remove();
       sfx.oppPlace();
-      if (isHighRarity(oppChar) && !isHighRarity(myChar)) sfx.levelup();
+      playRareSfx(oppChar);
+      if (rareFx(oppChar).flash) triggerRareFlash(rightSide);
       match.rolling = false;
       if (rc) rc.setAttribute("data-roll-key", myChar.id + "|" + oppChar.id);
       syncMatchControls();
