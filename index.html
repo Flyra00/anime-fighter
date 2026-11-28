@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Anime Fighter — Roll, Build, Battle!</title>
-<link rel="stylesheet" href="style.css?v=413">
+<link rel="stylesheet" href="style.css?v=414">
 </head>
 <body>
 <div id="bgLayer" class="bg-layer"></div>
@@ -56,8 +56,8 @@
       <div id="battleMenu" class="battle-menu">
         <label class="mode-label" for="battleMode">Mode:</label>
         <select id="battleMode">
-          <option value="normal">Normal — AVG tertinggi menang</option>
-          <option value="reverse">Reverse — AVG TERENDAH menang</option>
+          <option value="normal">Normal — Skor duel terbanyak menang</option>
+          <option value="reverse">Reverse — Skor duel TERENDAH menang</option>
         </select>
         <button id="botBtn" class="btn btn-red btn-big">ADU KARTU VS BOT</button>
         <button id="duelBtn" class="btn btn-blue btn-big">DUEL TEMAN (1 LAYAR)</button>
@@ -179,11 +179,24 @@
   </div>
 </div>
 
+<div id="rollStageOverlay" class="roll-stage-overlay" aria-hidden="true">
+  <div class="rso-scrim"></div>
+  <div class="rso-speedlines"></div>
+  <div class="rso-impact"></div>
+  <div class="rso-curtain rso-curtain-top"></div>
+  <div class="rso-curtain rso-curtain-bot"></div>
+  <div class="rso-secret-box">
+    <div class="rso-secret-frame"><span>// SECRET //</span></div>
+    <div class="rso-secret-line"></div>
+  </div>
+  <div class="rso-banner"></div>
+  <div class="rso-particles" id="rsoParticles"></div>
+</div>
 <div id="toast" class="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="characters.js?v=413"></script>
 <script src="online.js?v=413"></script>
-<script src="app.js?v=413"></script>
+<script src="app.js?v=414"></script>
 </body>
 </html>

@@ -92,6 +92,8 @@ main { max-width: 960px; margin: 0 auto; padding: 12px 12px 28px; }
 }
 #tab-battle:has(#matchPanel:not(.hidden)) .battle-intro,
 #tab-battle:has(#arena:not(.hidden)) .battle-intro { display: none; }
+body:has(#matchPanel:not(.hidden)) .tabs,
+body:has(#arena:not(.hidden)) .tabs { display: none; }
 
 .btn {
   border: 3px solid #111; border-radius: 10px; padding: 11px 16px; min-height: 44px; font-size: 14px;
@@ -307,23 +309,103 @@ input[type="text"]:focus, input[type="url"]:focus, select:focus {
   from { opacity: 0; transform: perspective(600px) rotateY(75deg) scale(0.95); }
   to { opacity: 1; transform: perspective(600px) rotateY(0deg) scale(1); }
 }
+/* === GANTI MULAI DARI @keyframes vsLandBounce SAMPAI SEBELUM .vs-side-label === */
 @keyframes vsLandBounce {
-  0% { opacity: 0; transform: perspective(600px) rotateY(75deg) scale(0.92); }
-  65% { opacity: 1; transform: perspective(600px) rotateY(0deg) scale(1.12); }
-  100% { opacity: 1; transform: perspective(600px) rotateY(0deg) scale(1); }
+  0% { opacity: 0; transform: scale(0.92); }
+  65% { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
 }
-@keyframes rarePulse {
-  0%, 100% { opacity: 0.35; transform: scale(1); }
-  50% { opacity: 0.9; transform: scale(1.015); }
+@keyframes fxLandRare {
+  0% { opacity: 0; transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
 }
-@keyframes rareGlow3x {
-  0%, 100% { opacity: 0.2; }
-  50% { opacity: 1; }
+@keyframes fxLandEpic {
+  0% { opacity: 0; transform: scale(1.2); }
+  70% { opacity: 1; transform: scale(0.97); }
+  100% { opacity: 1; transform: scale(1); }
 }
-@keyframes chipPopIn {
-  0% { opacity: 0; transform: translateX(-50%) scale(0.4); }
-  70% { opacity: 1; transform: translateX(-50%) scale(1.15); }
-  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+@keyframes fxLandLeg {
+  0% { opacity: 0; transform: scale(1.26); }
+  65% { opacity: 1; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes fxLandSecret {
+  0% { opacity: 0; transform: scale(1.34); }
+  60% { opacity: 1; transform: scale(0.95); }
+  80% { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes fxStampPop {
+  0% { opacity: 0; transform: scale(1.55) rotate(var(--stamp-rot, -3deg)); }
+  65% { opacity: 1; transform: scale(0.94) rotate(var(--stamp-rot, -3deg)); }
+  100% { opacity: 1; transform: scale(1) rotate(var(--stamp-rot, -3deg)); }
+}
+@keyframes fxSideFlash {
+  0% { opacity: 0.95; }
+  100% { opacity: 0; }
+}
+@keyframes fxEpicSlash {
+  0% { opacity: 1; transform: translateY(-50%) rotate(-18deg) scaleX(0); }
+  55% { opacity: 1; transform: translateY(-50%) rotate(-18deg) scaleX(1.15); }
+  100% { opacity: 0; transform: translateY(-50%) rotate(-18deg) scaleX(1.2); }
+}
+@keyframes fxSideRecoil {
+  0% { transform: translateY(0); }
+  35% { transform: translateY(4px); }
+  100% { transform: translateY(0); }
+}
+@keyframes fxLegBannerSlide {
+  0% { opacity: 0; transform: translate(-50%, -8px) rotate(-2deg) scaleX(0.35); }
+  65% { opacity: 1; transform: translate(-50%, 0) rotate(-2deg) scaleX(1.06); }
+  100% { opacity: 1; transform: translate(-50%, 0) rotate(-2deg) scaleX(1); }
+}
+@keyframes fxCrackTop {
+  0% { opacity: 0.95; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(-18px, -14px); }
+}
+@keyframes fxCrackBot {
+  0% { opacity: 0.95; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(18px, 14px); }
+}
+@keyframes fxShake4 {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-4px, 2px); }
+  50% { transform: translate(4px, -2px); }
+  75% { transform: translate(-2px, 1px); }
+}
+@keyframes fxShake6 {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-6px, 3px); }
+  40% { transform: translate(6px, -3px); }
+  60% { transform: translate(-4px, -2px); }
+  80% { transform: translate(3px, 2px); }
+}
+@keyframes fxShake8 {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-8px, 4px); }
+  32% { transform: translate(8px, -4px); }
+  50% { transform: translate(-6px, -3px); }
+  70% { transform: translate(4px, 3px); }
+  85% { transform: translate(-2px, 0); }
+}
+@keyframes fxSpeedSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@keyframes fxBannerSweep {
+  0% { opacity: 0; transform: translate(-110%, -50%) rotate(-3deg); }
+  18% { opacity: 1; transform: translate(0%, -50%) rotate(-3deg); }
+  78% { opacity: 1; transform: translate(0%, -50%) rotate(-3deg); }
+  100% { opacity: 0; transform: translate(110%, -50%) rotate(-3deg); }
+}
+@keyframes fxSecretSlashLine {
+  0% { opacity: 1; transform: translateY(-50%) scaleX(0); }
+  100% { opacity: 1; transform: translateY(-50%) scaleX(1); }
+}
+@keyframes fxParticleBurst {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+  75% { opacity: 1; transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(0.95); }
+  100% { opacity: 0; transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(0.4); }
 }
 @keyframes rollTickShift {
   from { transform: translateY(-6px); opacity: 0.75; }
@@ -337,80 +419,281 @@ input[type="text"]:focus, input[type="url"]:focus, select:focus {
   padding: 5px 10px; margin-bottom: 8px;
 }
 .vs-pair { display: flex; gap: 6px; align-items: stretch; width: 100%; max-width: 100%; }
-.vs-pair .vs-side { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+.vs-pair .vs-side {
+  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column;
+  position: relative; border-radius: 12px; padding: 3px;
+}
 .vs-card-wrap { position: relative; flex: 1; display: flex; }
 .vs-card-wrap .card { width: 100%; flex: 1; cursor: default; }
-.vs-card-wrap.vs-land .card { animation: vsLandBounce 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-/* v4.12: lompatan mendarat makin besar bareng rarity — Legendary/Mythical
-   pakai Big, Secret pakai Huge. */
-@keyframes vsLandBounceBig {
-  0% { opacity: 0; transform: perspective(600px) rotateY(75deg) scale(0.85); }
-  60% { opacity: 1; transform: perspective(600px) rotateY(0deg) scale(1.22); }
-  100% { opacity: 1; transform: perspective(600px) rotateY(0deg) scale(1); }
-}
-@keyframes vsLandBounceHuge {
-  0% { opacity: 0; transform: perspective(600px) rotateY(75deg) scale(0.8); }
-  55% { opacity: 1; transform: perspective(600px) rotateY(0deg) scale(1.32); }
-  75% { opacity: 1; transform: perspective(600px) rotateY(0deg) scale(0.97); }
-  100% { opacity: 1; transform: perspective(600px) rotateY(0deg) scale(1); }
-}
-.vs-card-wrap.vs-land-big .card { animation: vsLandBounceBig 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-.vs-card-wrap.vs-land-huge .card { animation: vsLandBounceHuge 550ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-/* v4.12: kilat saat kartu Mythical/Secret mendarat (dibuat JS, dihapus 650ms). */
-@keyframes rareFlash {
-  0% { opacity: 0.95; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.18); }
-}
-.vs-flash {
-  content: ""; position: absolute; inset: -6px; z-index: 5;
-  border-radius: 16px; pointer-events: none;
-  background: radial-gradient(circle, rgba(255, 235, 59, 0.85) 0%, rgba(255, 255, 255, 0.45) 45%, rgba(255, 235, 59, 0) 75%);
-  animation: rareFlash 600ms ease-out both;
-}
 .vs-card-wrap.vs-spin .card { cursor: default; }
-.vs-card-wrap.vs-pulse-light::after {
-  content: ""; position: absolute; inset: -4px;
-  border: 3px solid #2196F3; border-radius: 15px;
-  pointer-events: none;
-  animation: rarePulse 1.1s ease-in-out infinite;
+
+/* Landing per tier (GPU-only: transform + opacity) */
+.vs-card-wrap.vs-land .card { animation: vsLandBounce 240ms cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.vs-card-wrap.vs-land-rare .card {
+  animation: fxLandRare 220ms cubic-bezier(0.34, 1.45, 0.64, 1) both;
+  box-shadow: 5px 5px 0 #111;
 }
-.vs-card-wrap.vs-pulse-epic::after { border-color: #8B5CF6; }
-.vs-card-wrap.vs-rare-glow::after {
-  content: ""; position: absolute; inset: -5px;
-  border-radius: 16px; pointer-events: none;
-  animation: rareGlow3x 500ms ease-in-out 3 both;
+.vs-card-wrap.vs-land-epic .card {
+  animation: fxLandEpic 260ms cubic-bezier(0.34, 1.45, 0.64, 1) both;
+  box-shadow: 5px 5px 0 #111;
 }
-.vs-card-wrap.vs-glow-legendary::after {
-  border: 4px solid #F59E0B;
-  box-shadow: 0 0 18px rgba(245, 158, 11, 0.85);
+.vs-card-wrap.vs-land-legendary .card {
+  animation: fxLandLeg 300ms cubic-bezier(0.34, 1.45, 0.64, 1) both;
+  box-shadow: 6px 6px 0 #111;
 }
-.vs-card-wrap.vs-glow-epic::after {
-  border: 4px solid #8B5CF6;
-  box-shadow: 0 0 18px rgba(139, 92, 246, 0.85);
+.vs-card-wrap.vs-land-mythical .card {
+  animation: fxLandLeg 320ms cubic-bezier(0.34, 1.45, 0.64, 1) both;
+  box-shadow: 6px 6px 0 #111;
 }
-.vs-card-wrap.vs-glow-mythical::after {
-  border: 4px solid #EC4899;
-  box-shadow: 0 0 18px rgba(236, 72, 153, 0.85);
+.vs-card-wrap.vs-land-secret .card {
+  animation: fxLandSecret 360ms cubic-bezier(0.34, 1.45, 0.64, 1) both;
 }
-.vs-card-wrap.vs-glow-secret::after {
-  border: 4px solid #111;
-  box-shadow: 0 0 20px rgba(255, 235, 59, 0.95);
+
+/* Skin eksklusif kartu SECRET (hitam pekat + double border emas-putih + hard shadow emas) */
+.vs-card-wrap.vs-secret-skin .card {
+  background: #111111; color: #FFFFFF;
+  border: 3px solid #FFEB3B;
+  outline: 2px solid #FFFFFF; outline-offset: -6px;
+  box-shadow: 6px 6px 0 #FFEB3B;
 }
+.vs-card-wrap.vs-secret-skin .card img,
+.vs-card-wrap.vs-secret-skin .card .img-fallback {
+  background: #1B1B1B; border-bottom: 3px solid #FFEB3B;
+}
+.vs-card-wrap.vs-secret-skin .card .card-name { color: #FFEB3B; }
+.vs-card-wrap.vs-secret-skin .card .card-anime { color: #E5E7EB; }
+.vs-card-wrap.vs-secret-skin .card .card-move { color: #FDE047; }
+.vs-card-wrap.vs-secret-skin .card .stat-chip {
+  background: #1F1F1F; color: #FFFFFF; border-color: #FFEB3B;
+}
+.vs-card-wrap.vs-secret-skin .card .stat-chip b { color: #FFEB3B; }
+
+/* Side-scoped flat Neubrutalist backgrounds & suspense states */
+.vs-side.vs-bg-rare {
+  background-color: #DBEAFE;
+  background-image: radial-gradient(#2196F3 1.5px, transparent 1.5px);
+  background-size: 8px 8px;
+}
+.vs-side.vs-flash-rare::before {
+  content: ""; position: absolute; inset: 0; z-index: 6;
+  border-radius: 12px; background: #2196F3; pointer-events: none;
+  animation: fxSideFlash 90ms linear both;
+}
+.vs-side.vs-susp-epic {
+  background-color: #8B5CF6;
+  background-image: repeating-linear-gradient(-45deg, #7C3AED 0 8px, #8B5CF6 8px 16px);
+  outline: 3px solid #111;
+}
+.vs-side.vs-bg-epic {
+  background-color: #EDE9FE;
+  background-image: repeating-linear-gradient(-45deg, #8B5CF6 0 4px, transparent 4px 12px);
+}
+.vs-side.vs-recoil { animation: fxSideRecoil 200ms cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.vs-side-slash {
+  position: absolute; left: -10%; right: -10%; top: 50%; height: 14px; z-index: 7;
+  background: #FFFFFF; border-top: 3px solid #8B5CF6; border-bottom: 3px solid #111;
+  pointer-events: none; transform-origin: left center;
+  animation: fxEpicSlash 130ms ease-out both;
+}
+
+/* Spotlight side (naik di atas scrim #rollStageOverlay z-index: 45) */
+.vs-side.vs-spotlight { position: relative; z-index: 46; }
+.vs-side.vs-susp-legendary,
+.vs-side.vs-fake-gold {
+  background: #FACC15; outline: 4px solid #111;
+}
+.vs-side.vs-bg-legendary {
+  background: #FEF08A; outline: 3px solid #111;
+}
+.vs-side.vs-bg-mythical {
+  background: #FCE7F3; outline: 3px solid #EC4899;
+}
+.vs-side.vs-bg-secret {
+  background: #111111; outline: 3px solid #FFEB3B;
+}
+
+/* Mythical fake-out crack (2 layer diagonal clip-path + translate) */
+.vs-crack-layer {
+  position: absolute; inset: 0; z-index: 8; pointer-events: none; border-radius: 10px;
+}
+.vs-crack-top {
+  background: #EC4899; border: 3px solid #111;
+  clip-path: polygon(0 0, 100% 0, 100% 38%, 0 64%);
+  animation: fxCrackTop 240ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.vs-crack-bot {
+  background: #06B6D4; border: 3px solid #111;
+  clip-path: polygon(0 64%, 100% 38%, 100% 100%, 0 100%);
+  animation: fxCrackBot 240ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.vs-side.vs-rm-myth-frame {
+  outline: 4px solid #EC4899;
+  background-image: repeating-linear-gradient(-35deg, #EC4899 0 3px, #111 3px 6px, #FCE7F3 6px 18px);
+}
+
+/* Stiker & Banner Rarity Neubrutalist (tajam, miring, hard-shadow — bukan pil bulat) */
 .vs-rare-banner {
-  position: absolute; top: -11px; left: 50%; z-index: 4;
-  padding: 2px 10px; border-radius: 999px;
-  font-size: 10px; font-weight: 900; letter-spacing: .8px;
-  border: 2px solid #111; box-shadow: 2px 2px 0 #111;
+  position: absolute; top: -11px; right: 6px; z-index: 5;
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 12px; font-weight: 900; letter-spacing: .8px;
+  border: 2.5px solid #111; box-shadow: 3px 3px 0 #111;
   white-space: nowrap; pointer-events: none;
-  animation: chipPopIn 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --stamp-rot: -3deg;
+  transform: rotate(var(--stamp-rot));
+  animation: fxStampPop 220ms cubic-bezier(0.34, 1.45, 0.64, 1) both;
 }
-.vs-banner-legendary { background: #F59E0B; color: #111; }
-.vs-banner-mythical { background: #EC4899; color: #FFFFFF; }
-.vs-banner-secret { background: #111111; color: #FFEB3B; border-color: #FFEB3B; }
-.vs-banner-rare { background: #2196F3; color: #FFFFFF; }
-.vs-banner-epic { background: #8B5CF6; color: #FFFFFF; }
-.vs-banner-small { font-size: 9px; padding: 1px 8px; }
-.vs-banner-big { font-size: 12px; padding: 3px 12px; }
+.vs-banner-rare { background: #2196F3; color: #FFFFFF; --stamp-rot: -3deg; }
+.vs-banner-epic { background: #8B5CF6; color: #FFFFFF; --stamp-rot: -4deg; }
+.vs-banner-legendary {
+  left: 50%; right: auto; width: calc(100% - 8px); text-align: center;
+  background: #111111; color: #FACC15; border: 3px solid #FACC15;
+  font-size: 11px; padding: 3px 6px;
+  transform: translateX(-50%) rotate(-2deg);
+  animation: fxLegBannerSlide 260ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.vs-banner-mythical {
+  left: 50%; right: auto; width: calc(100% - 6px); text-align: center;
+  background: #EC4899; color: #FFFFFF; border: 3px solid #111;
+  box-shadow: 4px 4px 0 #111; font-size: 11.5px; padding: 3px 6px;
+  --stamp-rot: -2deg;
+  transform: translateX(-50%) rotate(-2deg);
+  animation: fxLegBannerSlide 260ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.vs-banner-secret {
+  left: 50%; right: auto; width: calc(100% - 6px); text-align: center;
+  background: #111111; color: #FFEB3B; border: 3px solid #FFEB3B;
+  box-shadow: 4px 4px 0 #111; font-size: 12px; padding: 3px 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 1.5px;
+  --stamp-rot: -2deg;
+  transform: translateX(-50%) rotate(-2deg);
+  animation: fxLegBannerSlide 260ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+/* Shake aman stacking context (diterapkan ke elemen lokal, bukan ke body) */
+.fx-shake-4 { animation: fxShake4 180ms ease-out both; }
+.fx-shake-6 { animation: fxShake6 220ms ease-out both; }
+.fx-shake-8 { animation: fxShake8 240ms ease-out both; }
+
+/* ---------- FULLSCREEN ROLL STAGE OVERLAY (z-index: 45, pointer-events: none) ---------- */
+.roll-stage-overlay {
+  position: fixed; inset: 0; z-index: 45;
+  pointer-events: none; overflow: hidden;
+  opacity: 0; transition: opacity 180ms ease;
+}
+.roll-stage-overlay.rso-active { opacity: 1; }
+.roll-stage-overlay.rso-over { z-index: 48; }
+.roll-stage-overlay * { pointer-events: none; }
+
+.rso-scrim {
+  position: absolute; inset: 0; opacity: 0;
+  background: rgba(17, 17, 17, 0.68);
+  transition: opacity 200ms ease;
+}
+.roll-stage-overlay.rso-scrim-on .rso-scrim { opacity: 1; }
+.roll-stage-overlay.rso-myth-bg .rso-scrim {
+  opacity: 1;
+  background: linear-gradient(115deg, #111111 0 48%, #EC4899 48% 100%);
+}
+.roll-stage-overlay.rso-secret-rm .rso-scrim {
+  opacity: 1; background: #0A0A0A;
+  box-shadow: inset 0 0 0 4px #FFEB3B;
+}
+
+/* Manga speedlines flat (repeating-conic-gradient, rotasi transform) */
+.rso-speedlines {
+  position: absolute; left: 50%; top: 45%;
+  width: 150vmax; height: 150vmax; opacity: 0;
+  transform: translate(-50%, -50%);
+}
+.roll-stage-overlay.rso-speed-leg .rso-speedlines {
+  opacity: 0.9;
+  background: repeating-conic-gradient(from 0deg, #FACC15 0deg 9deg, #111111 9deg 18deg);
+  animation: fxSpeedSpin 14s linear infinite;
+}
+.roll-stage-overlay.rso-speed-myth .rso-speedlines {
+  opacity: 0.85;
+  background: repeating-conic-gradient(from 0deg, #EC4899 0deg 8deg, #111111 8deg 15deg, #06B6D4 15deg 18deg);
+  animation: fxSpeedSpin 9s linear infinite;
+}
+.roll-stage-overlay.rso-speed-sec .rso-speedlines {
+  opacity: 0.92;
+  background: repeating-conic-gradient(from 0deg, #FFEB3B 0deg 7deg, #0A0A0A 7deg 18deg);
+  animation: fxSpeedSpin 12s linear infinite;
+}
+
+/* Impact frames (1-frame sakuga solid flat) */
+.rso-impact { position: absolute; inset: 0; opacity: 0; }
+.roll-stage-overlay.rso-imp-leg .rso-impact {
+  opacity: 1; background: #FEF9C3;
+}
+.roll-stage-overlay.rso-imp-myth .rso-impact {
+  opacity: 1;
+  background: repeating-linear-gradient(-25deg, #111111 0 18px, #FFFFFF 18px 34px, #EC4899 34px 40px);
+}
+.roll-stage-overlay.rso-imp-sec .rso-impact {
+  opacity: 1; background: #FFEB3B;
+}
+.roll-stage-overlay.rso-imp-sec .rso-impact::after {
+  content: ""; position: absolute; left: 50%; top: 46%;
+  width: 168px; height: 230px; background: #111111; border: 4px solid #111111;
+  border-radius: 12px; transform: translate(-50%, -50%);
+}
+
+/* Secret Blackout Curtains */
+.rso-curtain {
+  position: absolute; left: 0; right: 0; height: 52%; background: #0A0A0A;
+  transition: transform 130ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.rso-curtain-top { top: 0; transform: translateY(-102%); border-bottom: 3px solid #FFEB3B; }
+.rso-curtain-bot { bottom: 0; transform: translateY(102%); border-top: 3px solid #FFEB3B; }
+.roll-stage-overlay.rso-curtain-closed .rso-curtain-top,
+.roll-stage-overlay.rso-curtain-closed .rso-curtain-bot { transform: translateY(0); }
+
+.rso-secret-box {
+  position: absolute; inset: 0; opacity: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.roll-stage-overlay.rso-secret-tension .rso-secret-box { opacity: 1; }
+.rso-secret-frame {
+  width: 176px; height: 236px; border: 3px solid #FFEB3B; outline: 2px solid #FFFFFF;
+  outline-offset: 5px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: #FFEB3B; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 20px; font-weight: 900; letter-spacing: 2px;
+}
+.rso-secret-line {
+  position: absolute; left: 0; right: 0; top: 50%; height: 6px;
+  background: #FFEB3B; border-top: 2px solid #FFFFFF; border-bottom: 2px solid #FFFFFF;
+  opacity: 0; transform: translateY(-50%) scaleX(0); transform-origin: left center;
+}
+.roll-stage-overlay.rso-secret-slash .rso-secret-line {
+  animation: fxSecretSlashLine 100ms ease-out both;
+}
+
+/* Full-width sweeping banner (Mythical) */
+.rso-banner {
+  position: absolute; left: 0; right: 0; top: 24%;
+  padding: 10px 12px; text-align: center; font-weight: 900; font-size: 20px; letter-spacing: 2px;
+  background: #EC4899; color: #FFFFFF; border-top: 4px solid #111; border-bottom: 4px solid #111;
+  box-shadow: 0 5px 0 #111; opacity: 0; transform: translate(-110%, -50%) rotate(-3deg);
+}
+.roll-stage-overlay.rso-banner-go .rso-banner {
+  animation: fxBannerSweep 400ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+/* Pre-rendered 14-particle pool (GPU-only) */
+.rso-particles { position: absolute; inset: 0; }
+.fx-p {
+  position: absolute; left: var(--ox, 50%); top: var(--oy, 40%);
+  width: 12px; height: 12px; background: var(--c, #FFEB3B);
+  border: 2px solid #111; opacity: 0;
+}
+.fx-p.fx-diamond { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.fx-p.fx-tri { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.fx-p.fx-star { clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); width: 16px; height: 16px; }
+.fx-p.fx-bolt { clip-path: polygon(55% 0, 100% 0, 62% 46%, 92% 46%, 35% 100%, 48% 56%, 16% 56%); width: 15px; height: 18px; }
+.fx-p.fx-burst { animation: fxParticleBurst 440ms cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+
 .vs-side-label {
   font-weight: 900; font-size: 11px; color: #111;
   background: #FFEB3B; border: 2px solid #111; border-radius: 6px;
@@ -609,7 +892,7 @@ input[type="text"]:focus, input[type="url"]:focus, select:focus {
   background: #FFEB3B; border: 2px solid #111; border-radius: 999px;
   padding: 2px 10px; font-size: 13px; font-weight: 900; color: #111; white-space: nowrap;
 }
-.cb-duel { display: flex; gap: 8px; align-items: stretch; }
+.cb-duel { display: flex; gap: 8px; align-items: stretch; position: relative; }
 .cb-duel .vs { align-self: center; flex-shrink: 0; }
 .cb-fighter {
   flex: 1; min-width: 0; background: #FFF6E5; border: 3px solid #111;
@@ -635,17 +918,19 @@ input[type="text"]:focus, input[type="url"]:focus, select:focus {
 .cb-hpfill { display: block; height: 100%; background: #22C55E; transition: width 280ms ease; }
 .cb-hpfill.cb-low { background: #FF5252; }
 .cb-hpnum { width: 34px; text-align: right; font-weight: 900; font-size: 12px; color: #111; flex-shrink: 0; }
-.cb-dmgs { position: relative; height: 0; }
+.cb-dmgs { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
 .cb-dmg {
-  position: absolute; top: -10px; font-weight: 900; font-size: 18px; color: #FF5252;
-  text-shadow: 1px 1px 0 #111; pointer-events: none;
+  position: absolute; top: 36%; font-weight: 900; font-size: 20px; color: #FF5252;
+  text-shadow: 2px 2px 0 #111, -1px -1px 0 #111, 1px -1px 0 #111, -1px 1px 0 #111;
+  pointer-events: none;
   animation: cbDmgFloat 600ms ease-out both;
 }
-.cb-dmg-A { left: 22%; }
-.cb-dmg-B { right: 22%; }
+.cb-dmg-A { left: 23%; }
+.cb-dmg-B { left: 77%; }
 @keyframes cbDmgFloat {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-26px); }
+  from { opacity: 1; transform: translate(-50%, 0) scale(0.9); }
+  25% { opacity: 1; transform: translate(-50%, -8px) scale(1.15); }
+  to { opacity: 0; transform: translate(-50%, -32px) scale(1); }
 }
 .cb-fighter.cb-lunge-a { animation: cbLungeA 160ms ease-out; }
 .cb-fighter.cb-lunge-b { animation: cbLungeB 160ms ease-out; }
@@ -810,8 +1095,8 @@ body:has(#matchPanel:not(.hidden)) .bg-layer.is-art::after {
 }
 
 .match-cols { display: flex; flex-direction: column; }
-.match-col-opp { order: 1; }
-.match-col-slots { order: 2; }
+.match-col-slots { order: 1; }
+.match-col-opp { order: 2; }
 
 @media (min-width: 700px) {
   .match-cols {
@@ -847,12 +1132,22 @@ body:has(#matchPanel:not(.hidden)) .bg-layer.is-art::after {
    roll/adu kartu yang dimatikan; elemen tetap tampil di posisi akhirnya. */
 body.reduce-motion .vs-rolling-banner,
 body.reduce-motion .vs-card-wrap.vs-land .card,
-body.reduce-motion .vs-card-wrap.vs-land-big .card,
-body.reduce-motion .vs-card-wrap.vs-land-huge .card,
-body.reduce-motion .vs-card-wrap.vs-pulse-light::after,
-body.reduce-motion .vs-card-wrap.vs-rare-glow::after,
+body.reduce-motion .vs-card-wrap.vs-land-rare .card,
+body.reduce-motion .vs-card-wrap.vs-land-epic .card,
+body.reduce-motion .vs-card-wrap.vs-land-legendary .card,
+body.reduce-motion .vs-card-wrap.vs-land-mythical .card,
+body.reduce-motion .vs-card-wrap.vs-land-secret .card,
 body.reduce-motion .vs-rare-banner,
-body.reduce-motion .vs-flash,
+body.reduce-motion .vs-side.vs-flash-rare::before,
+body.reduce-motion .vs-side-slash,
+body.reduce-motion .vs-side.vs-recoil,
+body.reduce-motion .vs-crack-layer,
+body.reduce-motion .fx-shake-4,
+body.reduce-motion .fx-shake-6,
+body.reduce-motion .fx-shake-8,
+body.reduce-motion .rso-speedlines,
+body.reduce-motion .rso-banner,
+body.reduce-motion .fx-p,
 body.reduce-motion .vs-card-wrap.tick,
 body.reduce-motion .sd-team-left .sd-mini,
 body.reduce-motion .sd-team-right .sd-mini,
@@ -865,4 +1160,7 @@ body.reduce-motion .cb-lunge-b,
 body.reduce-motion .cb-shake {
   animation: none !important;
 }
+body.reduce-motion .rso-curtain,
+body.reduce-motion .rso-impact,
+body.reduce-motion .fx-p { display: none !important; }
 body.reduce-motion .sd-team-lose { opacity: 0.55 !important; }

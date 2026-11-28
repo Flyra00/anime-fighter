@@ -27,7 +27,7 @@
   var REROLL_COST = 100;
   var ROUND_TIME_MIN = 11; // timer acak per ronde, kayak Roblox (teramati 11-20)
   var ROUND_TIME_MAX = 20;
-  var ROLL_BUFFER_MS = 1500; // v4.9.3: roll ~1.4 dtk tidak boleh makan waktu
+  var ROLL_BUFFER_MS = 2500; // v4.14: roll Secret ~2.45 dtk tidak boleh makan waktu
   // mikir tamu online — host menambahkan buffer ini ke endsAt tiap ronde.
   var WIN_REWARD = 100;
   var LOSE_REWARD = 15;
@@ -47,6 +47,8 @@
                           //   online, mySide, oppSide, myPlaced, oppPlaced, endsAt, startedAt}
   var cardBattle = null; // state adu kartu aktif
   var battleSeq = 0;     // token pembatal timer adu kartu
+  var LOCK_IN_MS = 280;  // jeda lock-in agar kartu terlihat terkunci di slot
+  var lockInTimer = null;
 
   // ---------------- SAVE ----------------
   function defaultSave() {
@@ -103,18 +105,19 @@
     o.connect(g); g.connect(c.destination);
     o.start(t); o.stop(t + dur + 0.02);
   }
-  function noiseBurst(dur, vol, freq) {
+  function noiseBurst(dur, vol, freq, when, filterType) {
     if (!soundOn) return;
     var c = ctx(); if (!c) return;
+    var t = c.currentTime + (when || 0);
     var len = Math.floor(c.sampleRate * dur);
     var buf = c.createBuffer(1, len, c.sampleRate);
     var data = buf.getChannelData(0);
     for (var i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
     var src = c.createBufferSource(); src.buffer = buf;
-    var f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = freq || 800;
+    var f = c.createBiquadFilter(); f.type = filterType || "lowpass"; f.frequency.value = freq || 800;
     var g = c.createGain(); g.gain.value = vol || 0.4;
     src.connect(f); f.connect(g); g.connect(c.destination);
-    src.start();
+    src.start(t);
   }
   var sfx = {
     click: function () { tone(700, 0.06, "square", 0.08); },
@@ -134,7 +137,59 @@
     battle: function () { var n = [392, 523, 659, 784]; for (var i = 0; i < n.length; i++) tone(n[i], 0.1, "sawtooth", 0.1, i * 0.07); },
     roomJoin: function () { tone(659, 0.09, "sine", 0.16, 0); tone(988, 0.14, "sine", 0.16, 0.09); },
     matchStart: function () { var n = [523, 659, 784]; for (var i = 0; i < n.length; i++) tone(n[i], 0.12, "triangle", 0.16, i * 0.08); },
-    error: function () { tone(220, 0.12, "sawtooth", 0.12, 0); tone(180, 0.16, "sawtooth", 0.12, 0.12); }
+    error: function () { tone(220, 0.12, "sawtooth", 0.12, 0); tone(180, 0.16, "sawtooth", 0.12, 0.12); },
+    // v4.14: SFX Roll 5 Tier (synth WebAudio murni)
+    rareChime: function () {
+      tone(523, 0.09, "triangle", 0.18, 0); tone(523, 0.07, "square", 0.05, 0);
+      tone(784, 0.14, "triangle", 0.2, 0.07); tone(784, 0.1, "square", 0.05, 0.07);
+    },
+    epicSwoosh: function () { noiseBurst(0.16, 0.16, 2200, 0, "highpass"); tone(340, 0.15, "triangle", 0.08, 0, 720); },
+    epicImpact: function () {
+      tone(140, 0.11, "sine", 0.24, 0, 55);
+      var n = [659, 831, 988];
+      for (var i = 0; i < n.length; i++) tone(n[i], 0.12, "triangle", 0.18, 0.03 + i * 0.065);
+    },
+    legRiser: function () { tone(260, 0.24, "sawtooth", 0.1, 0, 780); tone(520, 0.24, "triangle", 0.09, 0, 1040); },
+    legImpact: function () {
+      tone(130, 0.16, "sine", 0.28, 0, 45); noiseBurst(0.09, 0.2, 700, 0, "lowpass");
+      var n = [523, 659, 784, 1047];
+      for (var i = 0; i < n.length; i++) {
+        tone(n[i], 0.22, "sawtooth", 0.09, i * 0.06);
+        tone(n[i], 0.24, "triangle", 0.14, i * 0.06);
+      }
+    },
+    mythRiser: function () { tone(300, 0.16, "sawtooth", 0.09, 0, 680); },
+    mythCrack: function () {
+      noiseBurst(0.08, 0.24, 2800, 0, "highpass");
+      noiseBurst(0.11, 0.22, 4200, 0.06, "highpass");
+      tone(1400, 0.09, "square", 0.09, 0.02, 420);
+    },
+    mythImpact: function () {
+      tone(110, 0.26, "sine", 0.32, 0, 36); noiseBurst(0.13, 0.22, 650, 0, "lowpass");
+      var n = [587, 740, 880, 1175];
+      for (var i = 0; i < n.length; i++) {
+        tone(n[i], 0.26, "sawtooth", 0.1, i * 0.055);
+        tone(n[i] * 0.5, 0.24, "square", 0.07, i * 0.055);
+      }
+    },
+    secHeartbeat: function () {
+      tone(78, 0.11, "sine", 0.3, 0, 38);
+      tone(82, 0.12, "sine", 0.32, 0.13, 36);
+    },
+    secSlash: function () {
+      noiseBurst(0.09, 0.22, 4600, 0, "highpass");
+      tone(2200, 0.09, "triangle", 0.12, 0, 880);
+    },
+    secImpact: function () {
+      tone(95, 0.36, "sine", 0.36, 0, 28); noiseBurst(0.18, 0.24, 520, 0, "lowpass");
+      // Minor (D-F-A) -> Major (D-F#-A-D5-A5)
+      tone(294, 0.18, "sawtooth", 0.09, 0.02); tone(349, 0.16, "sawtooth", 0.09, 0.02); tone(440, 0.18, "sawtooth", 0.09, 0.02);
+      var maj = [294, 370, 440, 587, 880];
+      for (var i = 0; i < maj.length; i++) {
+        tone(maj[i], 0.38, "triangle", 0.14, 0.15 + i * 0.035);
+        tone(maj[i], 0.34, "sawtooth", 0.07, 0.15 + i * 0.035);
+      }
+    }
   };
 
   // ---------------- BANTU ----------------
@@ -270,12 +325,13 @@
   function startMatch(mode) {
     sfx.click();
     stopTimer();
+    clearTimeout(lockInTimer); lockInTimer = null;
     match = {
       mode: mode,
       reverse: $("battleMode").value === "reverse",
       round: 1, turn: "a",
       a: emptyParts(), b: emptyParts(),
-      pair: { a: null, b: null }, roll: null, timeLeft: ROUND_TIME_MAX, timerId: null, over: false,
+      pair: { a: null, b: null }, roll: null, timeLeft: ROUND_TIME_MAX, timerId: null, over: false, locking: false,
       online: mode === "online",
       mySide: (mode === "online" && window.AFOnline) ? (AFOnline.isHost ? "a" : "b") : "a",
       oppSide: (mode === "online" && window.AFOnline) ? (AFOnline.isHost ? "b" : "a") : "b",
@@ -359,50 +415,153 @@
     }
     return list;
   }
+  // ---------------- ROLL FX 5 TIER (v4.14, Neubrutalist + Stage Overlay) ----------------
+  var TIER_RANK = { Common: 0, Rare: 1, Epic: 2, Legendary: 3, Mythical: 4, Secret: 5 };
+  var RARE_FX = {
+    Common:    { pause: 0,   sfx: ["pop"],        fullscreen: false },
+    Rare:      { pause: 80,  sfx: ["rareChime"],  fullscreen: false },
+    Epic:      { pause: 180, sfx: ["epicImpact"], fullscreen: false },
+    Legendary: { pause: 280, sfx: ["legImpact"],  fullscreen: true },
+    Mythical:  { pause: 420, sfx: ["mythImpact"], fullscreen: true },
+    Secret:    { pause: 520, sfx: ["secImpact"],  fullscreen: true }
+  };
+  var PARTICLE_POOL_SIZE = 14;
+  var particlePool = [];
+
+  function initRollOverlay() {
+    var box = $("rsoParticles");
+    if (!box || !document.createElement) return;
+    if (particlePool.length) return;
+    box.innerHTML = "";
+    for (var i = 0; i < PARTICLE_POOL_SIZE; i++) {
+      var sp = document.createElement("span");
+      sp.className = "fx-p";
+      box.appendChild(sp);
+      particlePool.push(sp);
+    }
+  }
+  function clearStageOverlay() {
+    var ov = $("rollStageOverlay");
+    if (ov && ov.classList) {
+      ov.className = "roll-stage-overlay";
+    }
+    for (var i = 0; i < particlePool.length; i++) {
+      if (particlePool[i].classList) particlePool[i].className = "fx-p";
+    }
+    var rc = $("rollCard");
+    if (rc && rc.querySelectorAll) {
+      rc.querySelectorAll(".vs-side").forEach(function (s) {
+        s.classList.remove("vs-spotlight", "vs-susp-epic", "vs-susp-legendary", "vs-fake-gold", "vs-flash-rare", "vs-recoil", "fx-shake-4", "fx-shake-6", "fx-shake-8");
+        s.querySelectorAll(".vs-side-slash, .vs-crack-layer").forEach(function (n) {
+          if (n.parentNode) n.parentNode.removeChild(n);
+        });
+      });
+    }
+    var mp = $("matchPanel");
+    if (mp && mp.querySelectorAll) {
+      mp.querySelectorAll(".fx-shake-4, .fx-shake-6, .fx-shake-8").forEach(function (el) {
+        el.classList.remove("fx-shake-4", "fx-shake-6", "fx-shake-8");
+      });
+    }
+  }
   function clearRollScene() {
     rollSeq++;
     while (rollTimers.length) clearTimeout(rollTimers.pop());
+    clearStageOverlay();
+    bgmDuckCancel(true);
     if (match) match.rolling = false;
   }
-  function rarityEffects(c) {
-    if (!c) return { wrapCls: "", banner: "" };
-    var r = rarityOf(c);
-    if (r === "Secret") return { wrapCls: " vs-rare-glow vs-glow-secret vs-land-huge", banner: '<span class="vs-rare-banner vs-banner-secret vs-banner-big">SECRET</span>' };
-    if (r === "Mythical") return { wrapCls: " vs-rare-glow vs-glow-mythical vs-land-big", banner: '<span class="vs-rare-banner vs-banner-mythical vs-banner-big">MYTHICAL</span>' };
-    if (r === "Legendary") return { wrapCls: " vs-rare-glow vs-glow-legendary vs-land-big", banner: '<span class="vs-rare-banner vs-banner-legendary">LEGENDARY</span>' };
-    if (r === "Epic") return { wrapCls: " vs-rare-glow vs-glow-epic", banner: '<span class="vs-rare-banner vs-banner-epic">EPIC</span>' };
-    if (r === "Rare") return { wrapCls: " vs-pulse-light", banner: '<span class="vs-rare-banner vs-banner-rare vs-banner-small">RARE</span>' };
-    return { wrapCls: "", banner: "" };
-  }
-  // v4.12: efek dapet kartu langka naik per tier — makin tinggi rarity-nya,
-  // makin lama jeda suspense-nya, makin meriah suaranya, dan (buat Mythical/
-  // Secret) ada kilat di kartu saat mendarat.
-  var RARE_FX = {
-    Common:    { pause: 0,   sfx: ["pop"],              flash: false },
-    Rare:      { pause: 80,  sfx: ["pop"],              flash: false },
-    Epic:      { pause: 160, sfx: ["coin"],             flash: false },
-    Legendary: { pause: 240, sfx: ["levelup"],          flash: false },
-    Mythical:  { pause: 340, sfx: ["levelup", "coin"],  flash: true },
-    Secret:    { pause: 480, sfx: ["win"],              flash: true }
-  };
   function rareFx(c) { return RARE_FX[rarityOf(c)] || RARE_FX.Common; }
+  function tierRank(c) { return c ? (TIER_RANK[rarityOf(c)] || 0) : 0; }
   function playRareSfx(c) {
     var fx = rareFx(c);
     fx.sfx.forEach(function (name) { if (sfx[name]) sfx[name](); });
   }
-  function triggerRareFlash(sideEl) {
-    if (!sideEl || isReducedMotion()) return;
-    var wrap = sideEl.querySelector(".vs-card-wrap");
-    if (!wrap) return;
-    var f = document.createElement("div");
-    f.className = "vs-flash";
-    wrap.appendChild(f);
-    setTimeout(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 650);
+  function rarityEffects(c) {
+    if (!c) return { wrapCls: "", sideCls: "", banner: "" };
+    var r = rarityOf(c);
+    if (r === "Secret") return { wrapCls: " vs-land-secret vs-secret-skin", sideCls: "vs-bg-secret", banner: '<span class="vs-rare-banner vs-banner-secret">[ SECRET ]</span>' };
+    if (r === "Mythical") return { wrapCls: " vs-land-mythical", sideCls: "vs-bg-mythical", banner: '<span class="vs-rare-banner vs-banner-mythical">⚡ MYTHICAL ⚡</span>' };
+    if (r === "Legendary") return { wrapCls: " vs-land-legendary", sideCls: "vs-bg-legendary", banner: '<span class="vs-rare-banner vs-banner-legendary">★ LEGENDARY ★</span>' };
+    if (r === "Epic") return { wrapCls: " vs-land-epic", sideCls: "vs-bg-epic", banner: '<span class="vs-rare-banner vs-banner-epic">EPIC!</span>' };
+    if (r === "Rare") return { wrapCls: " vs-land-rare", sideCls: "vs-bg-rare", banner: '<span class="vs-rare-banner vs-banner-rare">RARE</span>' };
+    return { wrapCls: "", sideCls: "", banner: "" };
   }
   function vsCardWrapHtml(c, isLanding) {
     var fx = rarityEffects(c);
     return '<div class="vs-card-wrap' + (isLanding ? " vs-land" : "") + fx.wrapCls + '">' +
       fx.banner + cardHtml(c, false) + "</div>";
+  }
+  function triggerParticles(sideEl, tier) {
+    if (isReducedMotion() || !particlePool.length) return;
+    var cfg = {
+      Rare:      { count: 4,  radius: 82,  colors: ["#2196F3", "#FFFFFF"], shapes: ["fx-diamond"] },
+      Epic:      { count: 8,  radius: 105, colors: ["#8B5CF6", "#FFFFFF", "#111111"], shapes: ["fx-tri", "fx-star"] },
+      Legendary: { count: 10, radius: 132, colors: ["#FACC15", "#111111", "#FFFFFF"], shapes: ["fx-star", "fx-diamond"] },
+      Mythical:  { count: 12, radius: 155, colors: ["#EC4899", "#06B6D4", "#FFFFFF", "#111111"], shapes: ["fx-tri", "fx-star", "fx-bolt"] },
+      Secret:    { count: 14, radius: 175, colors: ["#FFEB3B", "#FFFFFF", "#111111"], shapes: ["fx-bolt", "fx-star", "fx-diamond"] }
+    }[tier];
+    if (!cfg) return;
+    var ox = "50%", oy = "42%";
+    if (sideEl && typeof sideEl.getBoundingClientRect === "function") {
+      var rect = sideEl.getBoundingClientRect();
+      if (rect && rect.width > 0) {
+        ox = Math.round(rect.left + rect.width / 2) + "px";
+        oy = Math.round(rect.top + rect.height * 0.45) + "px";
+      }
+    }
+    var ov = $("rollStageOverlay");
+    if (ov && ov.classList) ov.classList.add("rso-active");
+    for (var i = 0; i < particlePool.length; i++) {
+      var p = particlePool[i];
+      if (i >= cfg.count) { p.className = "fx-p"; continue; }
+      var angle = (Math.PI * 2 * i) / cfg.count + (i % 2 ? 0.18 : -0.18);
+      var dist = cfg.radius * (0.72 + ((i * 37) % 10) / 28);
+      var tx = Math.round(Math.cos(angle) * dist) + "px";
+      var ty = Math.round(Math.sin(angle) * dist) + "px";
+      var rot = ((i % 2 ? 1 : -1) * (90 + i * 28)) + "deg";
+      p.style.setProperty("--ox", ox);
+      p.style.setProperty("--oy", oy);
+      p.style.setProperty("--tx", tx);
+      p.style.setProperty("--ty", ty);
+      p.style.setProperty("--rot", rot);
+      p.style.setProperty("--c", cfg.colors[i % cfg.colors.length]);
+      p.className = "fx-p " + cfg.shapes[i % cfg.shapes.length];
+    }
+    if (particlePool[0]) void particlePool[0].offsetWidth;
+    for (var j = 0; j < cfg.count; j++) particlePool[j].classList.add("fx-burst");
+  }
+  function triggerArenaShake(spotEl, levelCls) {
+    if (isReducedMotion()) return;
+    var targets = [spotEl, $("matchTitle"), $("turnLabel"), $("rerollBtn")];
+    targets.forEach(function (el) {
+      if (!el || !el.classList) return;
+      el.classList.remove("fx-shake-4", "fx-shake-6", "fx-shake-8");
+      void el.offsetWidth;
+      el.classList.add(levelCls);
+    });
+  }
+  function landSideCard(sideEl, label, ch, sideScopedOnly) {
+    if (!sideEl || !ch) return;
+    var fx = rarityEffects(ch);
+    sideEl.classList.remove("vs-susp-epic", "vs-susp-legendary", "vs-fake-gold");
+    if (fx.sideCls) sideEl.classList.add(fx.sideCls);
+    sideEl.innerHTML = '<div class="vs-side-label">' + esc(label) + "</div>" + vsCardWrapHtml(ch, true);
+    var r = rarityOf(ch);
+    if (!isReducedMotion()) {
+      if (r === "Rare") {
+        sideEl.classList.add("vs-flash-rare");
+        triggerParticles(sideEl, "Rare");
+      } else if (r === "Epic") {
+        var sl = document.createElement("div");
+        sl.className = "vs-side-slash";
+        sideEl.appendChild(sl);
+        sideEl.classList.remove("vs-recoil"); void sideEl.offsetWidth; sideEl.classList.add("vs-recoil");
+        triggerParticles(sideEl, "Epic");
+      } else if (sideScopedOnly && (r === "Legendary" || r === "Mythical" || r === "Secret")) {
+        triggerParticles(sideEl, "Epic");
+      }
+    }
   }
   function vsSpinCardHtml(c) {
     return '<div class="vs-card-wrap vs-spin"><button class="card" type="button" tabindex="-1">' +
@@ -427,8 +586,6 @@
     if (nm) nm.textContent = ch.name;
     var an = sideEl.querySelector(".card-anime");
     if (an) an.textContent = ch.anime;
-    // Restart animasi tick di tiap langkah (reflow paksa) supaya gerakannya
-    // kelihatan, bukan cuma gambarnya yang ganti.
     var w = sideEl.querySelector(".vs-card-wrap");
     if (w && w.classList) {
       w.classList.remove("tick");
@@ -436,33 +593,169 @@
       w.classList.add("tick");
     }
   }
-  // v4.9.3: kurva ease-out — burst cepat lalu rem yang kebaca, total ~1.4 dtk.
+  // v4.9.3: kurva ease-out — burst cepat lalu rem yang kebaca, total 1127ms.
   var ROLL_STEPS = [55, 58, 62, 68, 76, 88, 110, 145, 195, 270];
-  var ROLL_OPP_LAG_MS = 220; // BOT mendarat setelah LO
+  var ROLL_OPP_LAG_MS = 220; // BOT mendarat setelah LO (saat non-fullscreen)
+
+  function runSpotlightSequence(mySeq, spotEl, spotLabel, spotChar, onFinish) {
+    var r = rarityOf(spotChar);
+    var ov = $("rollStageOverlay");
+    function at(ms, fn) {
+      rollTimers.push(setTimeout(function () {
+        if (!match || match.over || rollSeq !== mySeq) return;
+        fn();
+      }, ms));
+    }
+    if (r === "Legendary") {
+      // Antisipasi 280ms -> flash 60ms -> reveal 440ms (~2,05 dtk total)
+      if (ov) ov.className = "roll-stage-overlay rso-active rso-scrim-on";
+      if (spotEl) spotEl.classList.add("vs-spotlight", "vs-susp-legendary");
+      bgmDuck(0.35, 60, 260, 300);
+      sfx.legRiser();
+      at(280, function () {
+        if (ov) ov.className = "roll-stage-overlay rso-active rso-over rso-imp-leg";
+      });
+      at(340, function () {
+        if (ov) ov.className = "roll-stage-overlay rso-active rso-scrim-on rso-speed-leg";
+        landSideCard(spotEl, spotLabel, spotChar, false);
+        triggerParticles(spotEl, "Legendary");
+        triggerArenaShake(spotEl, "fx-shake-4");
+        sfx.legImpact();
+      });
+      at(780, function () {
+        clearStageOverlay();
+        if (spotEl) spotEl.classList.add("vs-bg-legendary");
+        onFinish();
+      });
+      return;
+    }
+    if (r === "Mythical") {
+      // Fake-out emas 180ms -> crack 240ms -> impact frame 85ms -> reveal 440ms (~2,30 dtk total)
+      if (ov) ov.className = "roll-stage-overlay rso-active rso-scrim-on";
+      if (spotEl) spotEl.classList.add("vs-spotlight", "vs-fake-gold");
+      bgmDuck(0.15, 50, 380, 350);
+      sfx.mythRiser();
+      at(180, function () {
+        sfx.mythCrack();
+        if (spotEl && document.createElement) {
+          var ct = document.createElement("div"); ct.className = "vs-crack-layer vs-crack-top";
+          var cb = document.createElement("div"); cb.className = "vs-crack-layer vs-crack-bot";
+          spotEl.appendChild(ct); spotEl.appendChild(cb);
+        }
+      });
+      at(420, function () {
+        if (spotEl) spotEl.classList.remove("vs-spotlight", "vs-fake-gold");
+        if (ov) ov.className = "roll-stage-overlay rso-active rso-over rso-imp-myth";
+      });
+      at(505, function () {
+        if (ov) {
+          ov.className = "roll-stage-overlay rso-active rso-myth-bg rso-speed-myth rso-banner-go";
+          var bn = ov.querySelector(".rso-banner");
+          if (bn) bn.textContent = "⚡ MYTHICAL ⚡";
+        }
+        if (spotEl) {
+          spotEl.querySelectorAll(".vs-crack-layer").forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
+          spotEl.classList.add("vs-spotlight");
+        }
+        landSideCard(spotEl, spotLabel, spotChar, false);
+        triggerParticles(spotEl, "Mythical");
+        triggerArenaShake(spotEl, "fx-shake-6");
+        sfx.mythImpact();
+      });
+      at(1045, function () {
+        clearStageOverlay();
+        if (spotEl) spotEl.classList.add("vs-bg-mythical");
+        onFinish();
+      });
+      return;
+    }
+    // SECRET: blackout 520ms (curtain 130 + tension 290 + slash 100) -> impact 70ms -> reveal 540ms (~2,45 dtk total)
+    if (ov) ov.className = "roll-stage-overlay rso-active rso-over rso-curtain-closed";
+    bgmDuck(0, 40, 480, 420);
+    at(130, function () {
+      if (ov) ov.classList.add("rso-secret-tension");
+      sfx.secHeartbeat();
+    });
+    at(420, function () {
+      if (ov) ov.classList.add("rso-secret-slash");
+      sfx.secSlash();
+    });
+    at(520, function () {
+      if (ov) ov.className = "roll-stage-overlay rso-active rso-over rso-imp-sec";
+    });
+    at(590, function () {
+      if (ov) ov.className = "roll-stage-overlay rso-active rso-scrim-on rso-speed-sec";
+      if (spotEl) spotEl.classList.add("vs-spotlight");
+      landSideCard(spotEl, spotLabel, spotChar, false);
+      triggerParticles(spotEl, "Secret");
+      triggerArenaShake(spotEl, "fx-shake-8");
+      sfx.secImpact();
+    });
+    at(1190, function () {
+      clearStageOverlay();
+      if (spotEl) spotEl.classList.add("vs-bg-secret");
+      onFinish();
+    });
+  }
+
   function startRollScene(onDone) {
     clearRollScene();
     if (!match || match.over || !match.roll) return;
     var mySeq = rollSeq;
     var myChar = match.online ? match.pair[match.mySide] : match.pair[match.turn];
     var oppChar = match.online ? match.pair[match.oppSide] : match.pair[match.turn === "a" ? "b" : "a"];
-    // Reduced motion: JANGAN skip diam-diam seperti v4.9.2. Reveal bertahap
-    // ~320ms (LO dulu, BOT 160ms kemudian) supaya tetap kelihatan ada event.
+    var rMy = tierRank(myChar), rOpp = tierRank(oppChar);
+    var maxRank = Math.max(rMy, rOpp);
+
+    // Reduced-motion: versi tenang per tier + semua audio & bgmDuck tetap jalan.
     if (isReducedMotion()) {
       match.rolling = true;
       renderMatch("landed");
       var rc0 = $("rollCard");
       var sides0 = rc0 ? rc0.querySelectorAll(".vs-side") : [];
+      var ov0 = $("rollStageOverlay");
+      var fxMy0 = rarityEffects(myChar), fxOpp0 = rarityEffects(oppChar);
+      if (sides0[0] && fxMy0.sideCls) sides0[0].classList.add(fxMy0.sideCls);
+      if (sides0[1] && fxOpp0.sideCls) sides0[1].classList.add(fxOpp0.sideCls);
       if (sides0[1]) sides0[1].style.visibility = "hidden";
+      playRareSfx(myChar);
+      var spotIdx0 = rMy >= rOpp ? 0 : 1;
+      var spotChar0 = spotIdx0 === 0 ? myChar : oppChar;
+      var spotR0 = rarityOf(spotChar0);
+      if (maxRank >= 3 && ov0) {
+        if (spotR0 === "Legendary") {
+          bgmDuck(0.35, 60, 260, 300);
+          ov0.className = "roll-stage-overlay rso-active rso-scrim-on rso-speed-leg";
+        } else if (spotR0 === "Mythical") {
+          bgmDuck(0.15, 50, 380, 350);
+          ov0.className = "roll-stage-overlay rso-active rso-myth-bg";
+          if (sides0[spotIdx0]) sides0[spotIdx0].classList.add("vs-rm-myth-frame");
+        } else if (spotR0 === "Secret") {
+          bgmDuck(0, 40, 480, 420);
+          ov0.className = "roll-stage-overlay rso-active rso-secret-rm";
+        }
+        if (sides0[spotIdx0]) sides0[spotIdx0].classList.add("vs-spotlight");
+      }
       rollTimers.push(setTimeout(function () {
         if (!match || match.over || rollSeq !== mySeq) return;
         if (sides0[1]) sides0[1].style.visibility = "visible";
+        sfx.oppPlace();
+        playRareSfx(oppChar);
+      }, 320));
+      var rmDoneMs = maxRank >= 3 ? (spotR0 === "Secret" ? 800 : 620) : 340;
+      rollTimers.push(setTimeout(function () {
+        if (!match || match.over || rollSeq !== mySeq) return;
+        clearStageOverlay();
+        if (sides0[0] && fxMy0.sideCls) sides0[0].classList.add(fxMy0.sideCls);
+        if (sides0[1] && fxOpp0.sideCls) sides0[1].classList.add(fxOpp0.sideCls);
         match.rolling = false;
         if (rc0) rc0.setAttribute("data-roll-key", myChar.id + "|" + oppChar.id);
         syncMatchControls();
         if (onDone) onDone();
-      }, 320));
+      }, rmDoneMs));
       return;
     }
+
     match.rolling = true;
     renderMatch("spin");
     if (!match.online) {
@@ -477,48 +770,106 @@
     var leftDecoys = pickDecoys(ROLL_STEPS.length, myChar.img);
     var rightDecoys = pickDecoys(ROLL_STEPS.length, oppChar.img);
     preloadChars(leftDecoys.concat(rightDecoys).concat([myChar, oppChar]));
-    var rareMy = rareFx(myChar).pause;
-    var rareOpp = rareFx(oppChar).pause;
-    var elapsed = 0;
-    for (var i = 0; i < ROLL_STEPS.length; i++) {
-      elapsed += ROLL_STEPS[i];
-      (function (idx, t) {
-        rollTimers.push(setTimeout(function () {
-          if (!match || match.over || rollSeq !== mySeq) return;
-          if (idx === ROLL_STEPS.length - 1) {
-            // Langkah terakhir = LO mendarat (jeda rare bila langka).
-            if (leftSide) leftSide.innerHTML = '<div class="vs-side-label">' + esc(myLabel) + "</div>" + vsCardWrapHtml(myChar, true);
-            playRareSfx(myChar);
-            if (rareFx(myChar).flash) triggerRareFlash(leftSide);
-            if (rightSide && rightDecoys[idx]) updateSpinSide(rightSide, rightDecoys[idx]);
-          } else {
-            sfx.rollTick(idx);
-            if (leftSide && leftDecoys[idx]) updateSpinSide(leftSide, leftDecoys[idx]);
-            if (rightSide && rightDecoys[idx]) updateSpinSide(rightSide, rightDecoys[idx]);
-          }
-        }, t + (idx === ROLL_STEPS.length - 1 ? rareMy : 0)));
-      })(i, elapsed);
-    }
-    var landT = elapsed + rareMy;
-    // 1 tick ekstra buat sisi lawan, lalu BOT mendarat ~220ms setelah LO.
-    rollTimers.push(setTimeout(function () {
-      if (!match || match.over || rollSeq !== mySeq) return;
-      if (rightSide && rightDecoys[ROLL_STEPS.length - 1]) updateSpinSide(rightSide, rightDecoys[ROLL_STEPS.length - 1]);
-    }, landT + 110));
-    rollTimers.push(setTimeout(function () {
-      if (!match || match.over || rollSeq !== mySeq) return;
-      if (rightSide) rightSide.innerHTML = '<div class="vs-side-label">' + esc(oppLabel) + "</div>" + vsCardWrapHtml(oppChar, true);
+
+    function finishRoll() {
       var rb = rc ? rc.querySelector(".vs-rolling-banner") : null;
       if (rb) rb.remove();
-      sfx.oppPlace();
-      playRareSfx(oppChar);
-      if (rareFx(oppChar).flash) triggerRareFlash(rightSide);
       match.rolling = false;
       if (rc) rc.setAttribute("data-roll-key", myChar.id + "|" + oppChar.id);
       syncMatchControls();
       if (onDone) onDone();
-    }, landT + ROLL_OPP_LAG_MS + rareOpp));
+    }
+
+    // Spin ticks 0..8 (step terakhir idx=9 dipakai sebagai titik mendarat t=1127ms)
+    var elapsed = 0;
+    for (var i = 0; i < ROLL_STEPS.length - 1; i++) {
+      elapsed += ROLL_STEPS[i];
+      (function (idx, t) {
+        rollTimers.push(setTimeout(function () {
+          if (!match || match.over || rollSeq !== mySeq) return;
+          sfx.rollTick(idx);
+          if (leftSide && leftDecoys[idx]) updateSpinSide(leftSide, leftDecoys[idx]);
+          if (rightSide && rightDecoys[idx]) updateSpinSide(rightSide, rightDecoys[idx]);
+        }, t));
+      })(i, elapsed);
+    }
+    var spinEndT = elapsed + ROLL_STEPS[ROLL_STEPS.length - 1]; // 1127ms
+
+    // CABANG A: Salah satu/keduanya Legendary, Mythical, atau Secret (urutan berbasis tier)
+    if (maxRank >= 3) {
+      var spotIsMy = rMy >= rOpp; // seri -> LO pegang spotlight
+      var spotSide = spotIsMy ? leftSide : rightSide;
+      var spotLabel = spotIsMy ? myLabel : oppLabel;
+      var spotChar = spotIsMy ? myChar : oppChar;
+      var otherSide = spotIsMy ? rightSide : leftSide;
+      var otherLabel = spotIsMy ? oppLabel : myLabel;
+      var otherChar = spotIsMy ? oppChar : myChar;
+
+      // Sisi non-spotlight mendarat DULU di t=1127ms (BOT tidak ketelan blackout!)
+      rollTimers.push(setTimeout(function () {
+        if (!match || match.over || rollSeq !== mySeq) return;
+        landSideCard(otherSide, otherLabel, otherChar, true);
+        if (spotIsMy) sfx.oppPlace(); else sfx.pop();
+        if (tierRank(otherChar) === 1) sfx.rareChime();
+        else if (tierRank(otherChar) >= 2) sfx.epicImpact();
+        var rb = rc ? rc.querySelector(".vs-rolling-banner") : null;
+        if (rb) rb.textContent = "MENAHAN...";
+      }, spinEndT));
+
+      // +120ms kemudian spotlight / fake-out / blackout dimulai
+      rollTimers.push(setTimeout(function () {
+        if (!match || match.over || rollSeq !== mySeq) return;
+        runSpotlightSequence(mySeq, spotSide, spotLabel, spotChar, finishRoll);
+      }, spinEndT + 120));
+      return;
+    }
+
+    // CABANG B: Keduanya Common / Rare / Epic (side-scoped, LO dulu lalu BOT +220ms)
+    var pauseMy = rareFx(myChar).pause;
+    var pauseOpp = rareFx(oppChar).pause;
+    if (rarityOf(myChar) === "Epic") {
+      rollTimers.push(setTimeout(function () {
+        if (!match || match.over || rollSeq !== mySeq) return;
+        if (leftSide) leftSide.classList.add("vs-susp-epic");
+        sfx.epicSwoosh();
+      }, spinEndT));
+    }
+    var landMyT = spinEndT + pauseMy;
+    rollTimers.push(setTimeout(function () {
+      if (!match || match.over || rollSeq !== mySeq) return;
+      landSideCard(leftSide, myLabel, myChar, true);
+      playRareSfx(myChar);
+      if (rightSide && rightDecoys[ROLL_STEPS.length - 1]) updateSpinSide(rightSide, rightDecoys[ROLL_STEPS.length - 1]);
+    }, landMyT));
+
+    if (rarityOf(oppChar) === "Epic") {
+      rollTimers.push(setTimeout(function () {
+        if (!match || match.over || rollSeq !== mySeq) return;
+        if (rightSide) rightSide.classList.add("vs-susp-epic");
+        sfx.epicSwoosh();
+      }, landMyT + ROLL_OPP_LAG_MS));
+    } else {
+      rollTimers.push(setTimeout(function () {
+        if (!match || match.over || rollSeq !== mySeq) return;
+        if (rightSide && rightDecoys[ROLL_STEPS.length - 1]) updateSpinSide(rightSide, rightDecoys[ROLL_STEPS.length - 1]);
+      }, landMyT + 110));
+    }
+    rollTimers.push(setTimeout(function () {
+      if (!match || match.over || rollSeq !== mySeq) return;
+      landSideCard(rightSide, oppLabel, oppChar, true);
+      sfx.oppPlace();
+      playRareSfx(oppChar);
+      setTimeout(function () {
+        if (!match || match.over || rollSeq !== mySeq) return;
+        clearStageOverlay();
+        var fMy = rarityEffects(myChar), fOpp = rarityEffects(oppChar);
+        if (leftSide && fMy.sideCls) leftSide.classList.add(fMy.sideCls);
+        if (rightSide && fOpp.sideCls) rightSide.classList.add(fOpp.sideCls);
+      }, 460);
+      finishRoll();
+    }, landMyT + ROLL_OPP_LAG_MS + pauseOpp));
   }
+
   function beginTurn(side) {
     match.turn = side;
     match.roll = match.pair[side];
@@ -560,7 +911,7 @@
   }
   function autoPlace() {
     stopTimer();
-    if (!match || match.over || !match.roll) return;
+    if (!match || match.over || !match.roll || match.locking) return;
     var parts = activeParts();
     var empty = SLOT_DEFS.filter(function (d) { return !parts[d.key]; });
     if (!empty.length) return;
@@ -570,7 +921,7 @@
     afterPlace();
   }
   function placeRoll(key) {
-    if (!match || match.over || !match.roll) return;
+    if (!match || match.over || !match.roll || match.locking) return;
     if (match.online && match.myPlaced) { toast("Kamu sudah pasang ronde ini — menunggu lawan."); return; }
     var parts = match.online ? onlineMyParts() : activeParts();
     if (parts[key]) { toast("Slot " + slotLabel(key) + " udah terisi. Pilih slot kosong."); return; }
@@ -593,22 +944,33 @@
       return;
     }
     stopTimer();
+    match.locking = true;
     if (match.mode === "bot") {
       lockOpponent(); // lawan lock-in bareng
       sfx.oppPlace();
-      if (filledCount(match.a) === 5) { finishMatch(); return; }
+    }
+    renderMatch();
+    var mRef = match;
+    clearTimeout(lockInTimer);
+    lockInTimer = setTimeout(function () {
+      lockInTimer = null;
+      if (!match || match !== mRef || match.over) return;
+      match.locking = false;
+      if (match.mode === "bot") {
+        if (filledCount(match.a) === 5) { finishMatch(); return; }
+        match.round++;
+        beginRound();
+        return;
+      }
+      // Duel: gantian dalam ronde yang sama.
+      if (match.turn === "a") { beginTurn("b"); return; }
+      if (filledCount(match.b) === 5) { finishMatch(); return; }
       match.round++;
       beginRound();
-      return;
-    }
-    // Duel: gantian dalam ronde yang sama.
-    if (match.turn === "a") { beginTurn("b"); return; }
-    if (filledCount(match.b) === 5) { finishMatch(); return; }
-    match.round++;
-    beginRound();
+    }, LOCK_IN_MS);
   }
   function rerollCurrent() {
-    if (!match || match.over || !match.pair.a || !match.pair.b) return;
+    if (!match || match.over || match.locking || !match.pair.a || !match.pair.b) return;
     if (match.online) {
       // Reroll cuma bisa sebelum ada yang pasang ronde ini.
       if (match.myPlaced || match.oppPlaced) { toast("Reroll cuma bisa sebelum ada yang pasang ronde ini."); return; }
@@ -694,7 +1056,7 @@
     var rb = $("rerollBtn");
     if (rb) {
       rb.textContent = "REROLL (100 CASH)";
-      rb.disabled = !!match.rolling || save.cash < REROLL_COST ||
+      rb.disabled = !!match.rolling || !!match.locking || save.cash < REROLL_COST ||
         (match.online && (match.myPlaced || match.oppPlaced || match.rerollPending));
     }
     var parts = match.online ? onlineMyParts() : activeParts();
@@ -703,7 +1065,7 @@
     box.querySelectorAll(".match-slot").forEach(function (el) {
       var key = el.getAttribute("data-slot");
       var occupied = !!(parts && parts[key]);
-      el.disabled = !!match.rolling || occupied || !!(match.online && match.myPlaced);
+      el.disabled = !!match.rolling || !!match.locking || occupied || !!(match.online && match.myPlaced);
     });
   }
   function renderMatch(modeHint) {
@@ -791,6 +1153,7 @@
   function finishMatch(partsA, partsB) {
     if (!match) return;
     match.over = true;
+    clearTimeout(lockInTimer); lockInTimer = null;
     stopTimer();
     clearRollScene();
     resetMatchBackBtn();
@@ -866,8 +1229,8 @@
       cbFighterHtml(p.a, "A", p.a.hp, p.a.hp) +
       '<div class="vs">VS</div>' +
       cbFighterHtml(p.b, "B", p.b.hp, p.b.hp) +
-      '</div>' +
-      '<div class="cb-dmgs" id="cbDmgs"></div>';
+      '<div class="cb-dmgs" id="cbDmgs"></div>' +
+      '</div>';
   }
   function cbBlowEl(side, dmg) {
     var box = $("cbDmgs");
@@ -922,6 +1285,8 @@
       if (!p.scored) {
         p.scored = true;
         if (winSide === "A") c2.scoreA++; else c2.scoreB++;
+        var scorePill = $("cbScore");
+        if (scorePill) scorePill.textContent = "LO " + c2.scoreA + " – " + c2.scoreB + " LAWAN";
       }
       sfx.pop();
       setTimeout(function () {
@@ -1042,6 +1407,7 @@
   }
   function closeMatchUI(quiet) {
     sfx.click();
+    clearTimeout(lockInTimer); lockInTimer = null;
     stopTimer();
     clearRollScene();
     resetMatchBackBtn();
@@ -1205,8 +1571,17 @@
 
   function onlineFinishLocal() {
     if (!match) return;
+    if (match.locking) return;
+    match.locking = true;
+    var fa = match.a, fb = match.b, mRef = match;
     AFOnline.send({ t: "finish", a: match.a, b: match.b });
-    finishMatch(match.a, match.b);
+    renderMatch();
+    clearTimeout(lockInTimer);
+    lockInTimer = setTimeout(function () {
+      lockInTimer = null;
+      if (!match || match !== mRef || match.over) return;
+      finishMatch(fa, fb);
+    }, LOCK_IN_MS);
   }
 
   function onlineRematch() {
@@ -1273,7 +1648,18 @@
         renderMatch();
         break;
       case "finish":
-        if (match) finishMatch(msg.a, msg.b);
+        if (match && !match.over) {
+          match.a = msg.a; match.b = msg.b;
+          match.locking = true;
+          renderMatch();
+          var fmRef = match, fA = msg.a, fB = msg.b;
+          clearTimeout(lockInTimer);
+          lockInTimer = setTimeout(function () {
+            lockInTimer = null;
+            if (!match || match !== fmRef || match.over) return;
+            finishMatch(fA, fB);
+          }, LOCK_IN_MS);
+        }
         break;
       case "rematch":
         if (cardBattle && cardBattle.over) {
@@ -1503,6 +1889,10 @@
 
   // --- Musik latar (<audio> loop) ---
   var bgmAudio = null, bgmCustomBlobUrl = null, bgmCustomIsUrl = false;
+  var bgmVolWritable = null;
+  var bgmDuckSeq = 0, bgmDuckRaf = 0, bgmDuckTimer = null;
+  var rafFn = typeof requestAnimationFrame === "function" ? requestAnimationFrame : null;
+  var cancelRafFn = typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : null;
   function bgmEl() {
     if (bgmAudio) return bgmAudio;
     try {
@@ -1531,13 +1921,86 @@
     }
     return bgmTrack().src;
   }
+  function bgmBaseVol() {
+    var gain = save.music.track === "custom" ? 1 : bgmTrack().gain;
+    return Math.max(0, Math.min(1, (save.music.vol / 100) * gain));
+  }
+  function checkBgmVolWritable(a) {
+    if (bgmVolWritable !== null) return bgmVolWritable;
+    try {
+      var prev = a.volume;
+      var probe = prev > 0.5 ? prev - 0.02 : prev + 0.02;
+      a.volume = probe;
+      bgmVolWritable = Math.abs(a.volume - probe) < 0.005;
+      a.volume = prev;
+    } catch (e) { bgmVolWritable = false; }
+    return bgmVolWritable;
+  }
+  function bgmDuckCancel(restore) {
+    bgmDuckSeq++;
+    if (bgmDuckRaf && cancelRafFn) cancelRafFn(bgmDuckRaf);
+    bgmDuckRaf = 0;
+    clearTimeout(bgmDuckTimer); bgmDuckTimer = null;
+    if (restore && bgmAudio) {
+      try { bgmAudio.muted = false; bgmAudio.volume = bgmBaseVol(); } catch (e) {}
+    }
+  }
+  // targetVol = rasio 0..1 dari volume user saat ini (0 = hening total).
+  function bgmDuck(targetVol, fadeMs, holdMs, restoreMs) {
+    var a = bgmAudio;
+    if (!a || !save.music.on || a.paused) return;
+    bgmDuckCancel(false);
+    var seq = bgmDuckSeq;
+    var base = bgmBaseVol();
+    if (base <= 0) return;
+    var dst = Math.max(0, Math.min(1, base * targetVol));
+    if (!checkBgmVolWritable(a)) {
+      // iOS Safari: HTMLAudioElement.volume read-only -> mute singkat saat momen hening.
+      if (targetVol <= 0.05) {
+        bgmDuckTimer = setTimeout(function () {
+          if (seq !== bgmDuckSeq || !bgmAudio) return;
+          try { bgmAudio.muted = true; } catch (e) {}
+          bgmDuckTimer = setTimeout(function () {
+            if (seq !== bgmDuckSeq || !bgmAudio) return;
+            try { bgmAudio.muted = false; } catch (e) {}
+          }, Math.max(0, holdMs || 0));
+        }, Math.max(0, fadeMs || 0));
+      }
+      return;
+    }
+    function ramp(from, to, dur, done) {
+      if (!rafFn || !dur || dur <= 0) {
+        try { a.volume = to; } catch (e) {}
+        if (done) done();
+        return;
+      }
+      var t0 = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+      function step(now) {
+        if (seq !== bgmDuckSeq || !bgmAudio) return;
+        var p = Math.min(1, ((now || Date.now()) - t0) / dur);
+        try { a.volume = Math.max(0, Math.min(1, from + (to - from) * p)); } catch (e) {}
+        if (p < 1) bgmDuckRaf = rafFn(step);
+        else { bgmDuckRaf = 0; if (done) done(); }
+      }
+      bgmDuckRaf = rafFn(step);
+    }
+    var startVol = typeof a.volume === "number" ? a.volume : base;
+    ramp(startVol, dst, fadeMs || 40, function () {
+      if (seq !== bgmDuckSeq) return;
+      bgmDuckTimer = setTimeout(function () {
+        if (seq !== bgmDuckSeq || !bgmAudio) return;
+        ramp(dst, bgmBaseVol(), restoreMs || 300);
+      }, Math.max(0, holdMs || 0));
+    });
+  }
   function bgmApply() {
     var a = bgmEl(); if (!a) return;
+    bgmDuckCancel(false);
     var src = bgmSrc();
     try {
       if (a.getAttribute("data-src") !== src) { a.src = src; a.setAttribute("data-src", src); }
-      var gain = save.music.track === "custom" ? 1 : bgmTrack().gain;
-      a.volume = Math.max(0, Math.min(1, (save.music.vol / 100) * gain));
+      a.muted = false;
+      a.volume = bgmBaseVol();
       if (save.music.on) { var p = a.play(); if (p && p.catch) p.catch(function () {}); }
       else a.pause();
     } catch (e) {}
@@ -1797,6 +2260,7 @@
     mp.insertBefore(cols, back);
   })();
   settingsInit(); // v4.6: modal pengaturan + musik latar + background
+  initRollOverlay(); // v4.14: pre-render 14 partikel pool sekali saat startup
   applyMotionPref(); // v4.9.3: gate efek animasi (ikut Windows / toggle)
   renderAnimUI();
   prewarmRollImages(); // v4.9.3: gambar roll di-cache dulu supaya tidak blank
