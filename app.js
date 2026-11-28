@@ -200,9 +200,9 @@
   function cardHtml(c, isSelected, staggerIdx) {
     var staggerCls = typeof staggerIdx === "number" ? " card-stagger" : "";
     var staggerStyle = typeof staggerIdx === "number" ? ' style="animation-delay:' + (Math.min(staggerIdx, 20) * 30) + 'ms"' : "";
-    return '<button class="card rarity-' + c.rarity + (isSelected ? " selected" : "") + staggerCls + '" data-id="' + c.id + '"' + staggerStyle + '>' +
+    return '<button class="card rarity-' + rarityOf(c) + (isSelected ? " selected" : "") + staggerCls + '" data-id="' + c.id + '"' + staggerStyle + '>' +
       imgHtml(c) +
-      '<div class="card-body"><div class="rarity-tag">' + c.rarity.toUpperCase() + '</div>' +
+      '<div class="card-body"><div class="rarity-tag">' + rarityOf(c).toUpperCase() + '</div>' +
       '<div class="card-name">' + esc(c.name) + '</div>' +
       '<div class="card-anime">' + esc(c.anime) + '</div>' +
       '<div class="card-move">Jurus: ' + esc(c.move) + '</div>' +
@@ -214,7 +214,7 @@
     var q = ($("gallerySearch").value || "").toLowerCase();
     var f = $("galleryFilter").value;
     var list = CHARACTERS.filter(function (c) {
-      if (f && c.rarity !== f) return false;
+      if (f && rarityOf(c) !== f) return false;
       if (!q) return true;
       return (c.name + " " + c.anime + " " + c.move).toLowerCase().indexOf(q) !== -1;
     });
@@ -360,7 +360,7 @@
   }
   function rarityEffects(c) {
     if (!c) return { wrapCls: "", banner: "" };
-    var r = c.rarity;
+    var r = rarityOf(c);
     if (r === "Legendary") return { wrapCls: " vs-rare-glow vs-glow-legendary", banner: '<span class="vs-rare-banner vs-banner-legendary">LEGENDARY</span>' };
     if (r === "Mythical") return { wrapCls: " vs-rare-glow vs-glow-mythical", banner: '<span class="vs-rare-banner vs-banner-mythical">MYTHICAL</span>' };
     if (r === "Secret") return { wrapCls: " vs-rare-glow vs-glow-secret", banner: '<span class="vs-rare-banner vs-banner-secret">SECRET</span>' };
@@ -369,7 +369,7 @@
     return { wrapCls: "", banner: "" };
   }
   function isHighRarity(c) {
-    return !!(c && (c.rarity === "Legendary" || c.rarity === "Mythical" || c.rarity === "Secret"));
+    return !!(c && (rarityOf(c) === "Legendary" || rarityOf(c) === "Mythical" || rarityOf(c) === "Secret"));
   }
   function vsCardWrapHtml(c, isLanding) {
     var fx = rarityEffects(c);
@@ -596,7 +596,7 @@
         sfx.reroll();
         renderBadges();
         startRollScene();
-        toast("Reroll: " + match.roll.name + " [" + match.roll.rarity + "] — " + match.roll.move + "!");
+        toast("Reroll: " + match.roll.name + " [" + rarityOf(match.roll) + "] — " + match.roll.move + "!");
       } else {
         match.rerollPending = true;
         AFOnline.send({ t: "reroll" });
@@ -626,7 +626,7 @@
     startRollScene(function () {
       if (match && !match.over && !match.online) startTimer();
     });
-    toast("Reroll: " + match.roll.name + " [" + match.roll.rarity + "] — " + match.roll.move + "!");
+    toast("Reroll: " + match.roll.name + " [" + rarityOf(match.roll) + "] — " + match.roll.move + "!");
   }
   // Panel lawan (LIVE): 5 slot lawan terisi satu per satu tiap ronde,
   // keliatan karakternya + nilai stat untuk slot itu.
